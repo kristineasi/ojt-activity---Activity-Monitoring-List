@@ -939,51 +939,103 @@ def reports():
     db = get_db()
     cursor = db.cursor()
 
-    cursor.execute("""
-        SELECT c.name, c.icon, COUNT(a.id) as total,
-               SUM(CASE WHEN a.status = 'resolved' THEN 1 ELSE 0 END) as resolved,
-               SUM(CASE WHEN a.status = 'pending' THEN 1 ELSE 0 END) as pending,
-               SUM(CASE WHEN a.status = 'in_progress' THEN 1 ELSE 0 END) as in_progress
-        FROM categories c LEFT JOIN activities a ON a.category_id = c.id
-        GROUP BY c.id, c.name, c.icon ORDER BY total DESC
-    """)
+    is_staff = session.get('role') == 'it_staff'
+    uid = session['user_id']
+
+    if is_staff:
+        cursor.execute("""
+            SELECT c.name, c.icon, COUNT(a.id) as total,
+                   SUM(CASE WHEN a.status = 'resolved' THEN 1 ELSE 0 END) as resolved,
+                   SUM(CASE WHEN a.status = 'pending' THEN 1 ELSE 0 END) as pending,
+                   SUM(CASE WHEN a.status = 'in_progress' THEN 1 ELSE 0 END) as in_progress
+            FROM categories c LEFT JOIN activities a ON a.category_id = c.id AND a.assigned_to = %s
+            GROUP BY c.id, c.name, c.icon ORDER BY total DESC
+        """, (uid,))
+    else:
+        cursor.execute("""
+            SELECT c.name, c.icon, COUNT(a.id) as total,
+                   SUM(CASE WHEN a.status = 'resolved' THEN 1 ELSE 0 END) as resolved,
+                   SUM(CASE WHEN a.status = 'pending' THEN 1 ELSE 0 END) as pending,
+                   SUM(CASE WHEN a.status = 'in_progress' THEN 1 ELSE 0 END) as in_progress
+            FROM categories c LEFT JOIN activities a ON a.category_id = c.id
+            GROUP BY c.id, c.name, c.icon ORDER BY total DESC
+        """)
     category_report = cursor.fetchall()
 
-    cursor.execute("""
-        SELECT u.full_name, u.department,
-               COUNT(a.id) as total_assigned,
-               SUM(CASE WHEN a.status = 'resolved' THEN 1 ELSE 0 END) as resolved,
-               SUM(CASE WHEN a.status = 'in_progress' THEN 1 ELSE 0 END) as in_progress,
-               SUM(CASE WHEN a.status = 'pending' THEN 1 ELSE 0 END) as pending
-        FROM users u LEFT JOIN activities a ON a.assigned_to = u.id
-        WHERE u.role = 'it_staff' AND u.is_active = 1
-        GROUP BY u.id, u.full_name, u.department ORDER BY total_assigned DESC
-    """)
+    if is_staff:
+        cursor.execute("""
+            SELECT u.full_name, u.department,
+                   COUNT(a.id) as total_assigned,
+                   SUM(CASE WHEN a.status = 'resolved' THEN 1 ELSE 0 END) as resolved,
+                   SUM(CASE WHEN a.status = 'in_progress' THEN 1 ELSE 0 END) as in_progress,
+                   SUM(CASE WHEN a.status = 'pending' THEN 1 ELSE 0 END) as pending
+            FROM users u LEFT JOIN activities a ON a.assigned_to = u.id
+            WHERE u.id = %s
+            GROUP BY u.id, u.full_name, u.department
+        """, (uid,))
+    else:
+        cursor.execute("""
+            SELECT u.full_name, u.department,
+                   COUNT(a.id) as total_assigned,
+                   SUM(CASE WHEN a.status = 'resolved' THEN 1 ELSE 0 END) as resolved,
+                   SUM(CASE WHEN a.status = 'in_progress' THEN 1 ELSE 0 END) as in_progress,
+                   SUM(CASE WHEN a.status = 'pending' THEN 1 ELSE 0 END) as pending
+            FROM users u LEFT JOIN activities a ON a.assigned_to = u.id
+            WHERE u.role = 'it_staff' AND u.is_active = 1
+            GROUP BY u.id, u.full_name, u.department ORDER BY total_assigned DESC
+        """)
     staff_report = cursor.fetchall()
 
-    cursor.execute("""
-        SELECT priority, COUNT(*) as count,
-               SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) as resolved
-        FROM activities GROUP BY priority
-        ORDER BY FIELD(priority, 'critical', 'high', 'medium', 'low')
-    """)
+    if is_staff:
+        cursor.execute("""
+            SELECT priority, COUNT(*) as count,
+                   SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) as resolved
+            FROM activities WHERE assigned_to = %s
+            GROUP BY priority
+            ORDER BY FIELD(priority, 'critical', 'high', 'medium', 'low')
+        """, (uid,))
+    else:
+        cursor.execute("""
+            SELECT priority, COUNT(*) as count,
+                   SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) as resolved
+            FROM activities GROUP BY priority
+            ORDER BY FIELD(priority, 'critical', 'high', 'medium', 'low')
+        """)
     priority_report = cursor.fetchall()
 
-    cursor.execute("""
-        SELECT DATE_FORMAT(created_at, '%b %Y') as month,
-               COUNT(*) as total,
-               SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) as resolved
-        FROM activities WHERE created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
-        GROUP BY DATE_FORMAT(created_at, '%Y-%m') ORDER BY MIN(created_at) ASC
-    """)
+    if is_staff:
+        cursor.execute("""
+            SELECT DATE_FORMAT(created_at, '%%b %%Y') as month,
+                   COUNT(*) as total,
+                   SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) as resolved
+            FROM activities
+            WHERE assigned_to = %s AND created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
+            GROUP BY DATE_FORMAT(created_at, '%%Y-%%m') ORDER BY MIN(created_at) ASC
+        """, (uid,))
+    else:
+        cursor.execute("""
+            SELECT DATE_FORMAT(created_at, '%b %Y') as month,
+                   COUNT(*) as total,
+                   SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) as resolved
+            FROM activities WHERE created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
+            GROUP BY DATE_FORMAT(created_at, '%Y-%m') ORDER BY MIN(created_at) ASC
+        """)
     monthly_trend = cursor.fetchall()
 
-    cursor.execute("""
-        SELECT requester_department as department, COUNT(id) as total
-        FROM activities
-        WHERE requester_department IS NOT NULL AND requester_department != ''
-        GROUP BY requester_department ORDER BY total DESC
-    """)
+    if is_staff:
+        cursor.execute("""
+            SELECT requester_department as department, COUNT(id) as total
+            FROM activities
+            WHERE assigned_to = %s AND requester_department IS NOT NULL AND requester_department != ''
+            GROUP BY requester_department ORDER BY total DESC
+        """, (uid,))
+    else:
+        cursor.execute("""
+            SELECT requester_department as department, COUNT(id) as total
+            FROM activities
+            WHERE requester_department IS NOT NULL AND requester_department != ''
+            GROUP BY requester_department ORDER BY total DESC
+        """)
     dept_report = cursor.fetchall()
 
     db.close()

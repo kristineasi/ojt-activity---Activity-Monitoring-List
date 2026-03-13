@@ -23,6 +23,68 @@
 
 <div id="reportExportArea">
 
+{% if current_user.get('role') == 'it_staff' %}
+<!-- My Performance (top for IT staff) -->
+<div class="card content-card mb-4">
+    <div class="card-header-custom">
+        <div>
+            <h6 class="card-title-custom">My Performance</h6>
+            <p class="card-sub-custom">Your ticket acceptance and resolution stats</p>
+        </div>
+        <i class="fas fa-trophy text-warning"></i>
+    </div>
+    <div class="card-body p-0" id="itStaffReportSection">
+        {% if staff_report %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 custom-table">
+                <thead>
+                    <tr>
+                        <th>Staff Member</th>
+                        <th>Department</th>
+                        <th class="text-center">Total Accepted</th>
+                        <th class="text-center">Pending</th>
+                        <th class="text-center">In Progress</th>
+                        <th class="text-center">Resolved</th>
+                        <th>Performance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in staff_report %}
+                    {% set total = s.total_assigned or 0 %}
+                    {% set resolved = s.resolved or 0 %}
+                    {% set rate = ((resolved / total * 100)|int) if total > 0 else 0 %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="mini-avatar">{{ s.full_name[0].upper() }}</div>
+                                <span class="fw-semibold">{{ s.full_name }}</span>
+                            </div>
+                        </td>
+                        <td>{{ s.department or '—' }}</td>
+                        <td class="text-center"><strong>{{ total }}</strong></td>
+                        <td class="text-center"><span class="status-badge status-pending">{{ s.pending or 0 }}</span></td>
+                        <td class="text-center"><span class="status-badge status-in_progress">{{ s.in_progress or 0 }}</span></td>
+                        <td class="text-center"><span class="status-badge status-resolved">{{ resolved }}</span></td>
+                        <td style="min-width:150px;">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="progress flex-fill" style="height:8px;">
+                                    <div class="progress-bar bg-primary" style="width:{{ rate }}%;"></div>
+                                </div>
+                                <span class="small fw-semibold">{{ rate }}%</span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state py-4"><i class="fas fa-user-tie"></i><p>No staff data available.</p></div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
 <!-- Charts Row -->
 <div class="row g-3 mb-4">
     <div class="col-lg-8">
@@ -112,7 +174,8 @@
     </div>
 </div>
 
-<!-- Staff Performance -->
+<!-- Staff Performance (admin only in this position) -->
+{% if current_user.get('role') != 'it_staff' %}
 <div class="card content-card mb-4">
     <div class="card-header-custom">
         <div>
@@ -176,6 +239,7 @@
         {% endif %}
     </div>
 </div>
+{% endif %}
 
 <!-- Priority Breakdown -->
 <div class="row g-3">
@@ -407,7 +471,12 @@ async function exportReportPdf(e) {
 
         const now = new Date();
         const stamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+        {% if current_user.get('role') == 'it_staff' %}
+        const username = {{ current_user.get('username', '') | tojson }};
+        pdf.save(`report-${username}-${stamp}.pdf`);
+        {% else %}
         pdf.save(`it-support-report-${stamp}.pdf`);
+        {% endif %}
     } catch (err) {
         console.error(err);
         alert('Failed to export PDF. Please try again.');
