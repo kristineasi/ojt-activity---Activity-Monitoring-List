@@ -1,0 +1,433 @@
+{% extends 'base.html' %}
+{% block title %}{{ activity.ticket_no }} &mdash; IT Support AMS{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('activities') }}">Activities</a></li>
+<li class="breadcrumb-item active">{{ activity.ticket_no }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <h1 class="page-title mb-0">{{ activity.ticket_no }}</h1>
+            <span class="status-badge status-{{ activity.status }} fs-6">
+                {{ activity.status|replace('_',' ')|capitalize }}
+            </span>
+            <span class="priority-badge priority-{{ activity.priority }}">
+                {{ activity.priority|capitalize }}
+            </span>
+        </div>
+        <p class="page-sub mt-1">{{ activity.title }}</p>
+    </div>
+    <div class="page-actions d-flex gap-2 flex-wrap">
+        <a href="{{ url_for('edit_activity', activity_id=activity.id) }}" class="btn btn-warning text-dark">
+            <i class="fas fa-edit me-2"></i>Edit
+        </a>
+        <a href="{{ url_for('activities') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back
+        </a>
+    </div>
+</div>
+
+<div class="row g-3">
+    <!-- Left Column -->
+    <div class="col-lg-8">
+
+        <!-- Ticket Details -->
+        <div class="card content-card mb-3">
+            <div class="card-header-custom">
+                <div>
+                    <h6 class="card-title-custom">Issue Details</h6>
+                    <p class="card-sub-custom">Full ticket information</p>
+                </div>
+                <span class="cat-badge">
+                    <i class="fas {{ activity.category_icon or 'fa-tools' }} me-1"></i>
+                    {{ activity.category_name or 'Uncategorized' }}
+                </span>
+            </div>
+            <div class="card-body p-4">
+                <h5 class="fw-bold mb-3">{{ activity.title }}</h5>
+                {% if activity.description %}
+                <div class="mb-4">
+                    <div class="detail-label">Description</div>
+                    <div class="detail-content">{{ activity.description }}</div>
+                </div>
+                {% endif %}
+                {% if activity.notes %}
+                <div class="notes-box mb-3">
+                    <div class="notes-header"><i class="fas fa-sticky-note me-2"></i>Internal Notes</div>
+                    <div class="notes-body">{{ activity.notes }}</div>
+                </div>
+                {% endif %}
+
+                <div class="row g-3 mt-1">
+                    <div class="col-sm-6">
+                        <div class="detail-field">
+                            <i class="fas fa-hourglass-start text-muted me-2"></i>
+                            <span class="text-muted">Filed on:</span>
+                            <strong class="ms-1">{{ activity.created_at.strftime('%b %d, %Y %I:%M %p') if activity.created_at else '—' }}</strong>
+                        </div>
+                    </div>
+                    {% if activity.started_at %}
+                    <div class="col-sm-6">
+                        <div class="detail-field">
+                            <i class="fas fa-play text-info me-2"></i>
+                            <span class="text-muted">Started:</span>
+                            <strong class="ms-1">{{ activity.started_at.strftime('%b %d, %Y %I:%M %p') }}</strong>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if activity.resolved_at %}
+                    <div class="col-sm-6">
+                        <div class="detail-field">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            <span class="text-muted">Resolved:</span>
+                            <strong class="ms-1 text-success">{{ activity.resolved_at.strftime('%b %d, %Y %I:%M %p') }}</strong>
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div class="col-sm-6">
+                        <div class="detail-field">
+                            <i class="fas fa-user text-muted me-2"></i>
+                            <span class="text-muted">Created by:</span>
+                            <strong class="ms-1">{{ activity.created_by_name or '—' }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Status Update -->
+        {% if activity.status not in ['closed', 'cancelled'] %}
+        <div class="card content-card mb-3">
+            <div class="card-header-custom">
+                <div>
+                    <h6 class="card-title-custom">Update Status</h6>
+                    <p class="card-sub-custom">Quick status change</p>
+                </div>
+            </div>
+            <div class="card-body p-3">
+                <form method="POST" action="{{ url_for('update_activity_status', activity_id=activity.id) }}"
+                      class="d-flex gap-2 flex-wrap align-items-center">
+                    <select name="status" class="form-select" style="max-width:220px;">
+                        <option value="pending" {{ 'selected' if activity.status=='pending' }}>⏳ Pending</option>
+                        <option value="in_progress" {{ 'selected' if activity.status=='in_progress' }}>🔄 In Progress</option>
+                        <option value="resolved" {{ 'selected' if activity.status=='resolved' }}>✅ Resolved</option>
+                        <option value="closed" {{ 'selected' if activity.status=='closed' }}>📁 Closed</option>
+                        <option value="cancelled" {{ 'selected' if activity.status=='cancelled' }}>❌ Cancelled</option>
+                    </select>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-sync-alt me-1"></i> Update Status
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Resolution Notes -->
+        <div class="card content-card mb-3">
+            <div class="card-header-custom">
+                <div>
+                    <h6 class="card-title-custom">Resolution Notes</h6>
+                    <p class="card-sub-custom">What was done to fix the issue</p>
+                </div>
+                <i class="fas fa-check-double text-success"></i>
+            </div>
+            <div class="card-body p-3">
+                {% if activity.resolution %}
+                <div class="resolution-box mb-3">
+                    <div class="resolution-body">{{ activity.resolution }}</div>
+                </div>
+                {% endif %}
+                {% if activity.status not in ['cancelled'] %}
+                <form method="POST" action="{{ url_for('set_resolution', activity_id=activity.id) }}">
+                    <textarea name="resolution" class="form-control mb-2" rows="3"
+                              placeholder="Describe the solution applied — e.g. Reinstalled printer driver and reconnected to network."
+                              >{{ activity.resolution or '' }}</textarea>
+                    <button type="submit" class="btn btn-success btn-sm">
+                        <i class="fas fa-save me-1"></i> Save Resolution Notes
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Comments -->
+        <div class="card content-card mb-3">
+            <div class="card-header-custom">
+                <div>
+                    <h6 class="card-title-custom">Comments / Messages</h6>
+                    <p class="card-sub-custom">Communicate with the requester</p>
+                </div>
+                <span class="badge bg-light text-dark border">{{ comments|length }}</span>
+            </div>
+            <div class="card-body p-3">
+                {% if comments %}
+                <div class="comments-list mb-3">
+                    {% for c in comments %}
+                    <div class="comment-item {% if c.is_internal %}comment-internal{% endif %}">
+                        <div class="comment-avatar">{{ c.commenter_name[0].upper() if c.commenter_name else '?' }}</div>
+                        <div class="comment-body">
+                            <div class="comment-header">
+                                <span class="comment-author">{{ c.commenter_name or 'Unknown' }}</span>
+                                {% if c.commenter_role == 'employee' %}
+                                <span class="badge bg-success-subtle text-success ms-1">Requester</span>
+                                {% else %}
+                                <span class="badge bg-info-subtle text-info ms-1">IT Staff</span>
+                                {% endif %}
+                                {% if c.is_internal %}
+                                <span class="badge bg-warning-subtle text-warning ms-1"><i class="fas fa-lock me-1"></i>Internal</span>
+                                {% endif %}
+                                <span class="comment-time ms-auto">{{ c.created_at.strftime('%b %d, %Y %I:%M %p') if c.created_at else '' }}</span>
+                            </div>
+                            <div class="comment-text">{{ c.message }}</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state-sm mb-3">
+                    <i class="fas fa-comment-slash"></i>
+                    <p>No comments yet.</p>
+                </div>
+                {% endif %}
+                {% if activity.status not in ['closed', 'cancelled'] %}
+                <form method="POST" action="{{ url_for('add_comment', activity_id=activity.id) }}">
+                    <textarea name="message" class="form-control mb-2" rows="2"
+                              placeholder="Type a message to the requester, or add an internal note..."></textarea>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="is_internal" id="isInternal" value="1">
+                            <label class="form-check-label small text-muted" for="isInternal">
+                                <i class="fas fa-lock me-1"></i>Internal only (not visible to requester)
+                            </label>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm ms-auto">
+                            <i class="fas fa-paper-plane me-1"></i> Send
+                        </button>
+                    </div>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Activity Timeline / Logs -->
+        <div class="card content-card">
+            <div class="card-header-custom">
+                <div>
+                    <h6 class="card-title-custom">Activity Timeline</h6>
+                    <p class="card-sub-custom">History of changes</p>
+                </div>
+                <span class="badge bg-light text-dark border">{{ logs|length }} entries</span>
+            </div>
+            <div class="card-body p-3">
+                {% if logs %}
+                <div class="timeline">
+                    {% for log in logs %}
+                    <div class="timeline-item">
+                        <div class="timeline-dot tl-{{ log.action }}"></div>
+                        <div class="timeline-content">
+                            <div class="tl-header">
+                                <span class="tl-action">
+                                    {% if log.action == 'created' %}
+                                        <i class="fas fa-plus-circle text-success me-1"></i>Ticket Created
+                                    {% elif log.action == 'status_changed' %}
+                                        <i class="fas fa-exchange-alt text-info me-1"></i>Status Changed
+                                    {% elif log.action == 'commented' %}
+                                        <i class="fas fa-comment text-primary me-1"></i>Comment Added
+                                    {% elif log.action == 'resolution_added' %}
+                                        <i class="fas fa-check-double text-success me-1"></i>Resolution Added
+                                    {% elif log.action == 'rated' %}
+                                        <i class="fas fa-star text-warning me-1"></i>Rated by Requester
+                                    {% else %}
+                                        <i class="fas fa-edit text-warning me-1"></i>Updated
+                                    {% endif %}
+                                </span>
+                                <span class="tl-time">{{ log.created_at.strftime('%b %d, %Y %I:%M %p') if log.created_at else '' }}</span>
+                            </div>
+                            <div class="tl-details">{{ log.details or '' }}</div>
+                            <div class="tl-user">
+                                <i class="fas fa-user-circle me-1"></i>{{ log.user_name or 'System' }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state-sm">
+                    <i class="fas fa-history"></i>
+                    <p>No activity logs yet.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column -->
+    <div class="col-lg-4">
+
+        <!-- Requester Info -->
+        <div class="card content-card mb-3">
+            <div class="card-header-custom">
+                <div>
+                    <h6 class="card-title-custom">Requester</h6>
+                </div>
+                <i class="fas fa-user text-primary"></i>
+            </div>
+            <div class="card-body p-3">
+                <div class="person-card">
+                    <div class="person-avatar person-emp">
+                        {{ activity.requester_name[0].upper() if activity.requester_name else '?' }}
+                    </div>
+                    <div class="person-details">
+                        <div class="person-name">{{ activity.requester_name or '—' }}</div>
+                        <div class="person-role">Requester</div>
+                        <div class="person-dept">
+                            <i class="fas fa-building me-1 text-muted"></i>{{ activity.requester_department or '—' }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Handling Staff -->
+        <div class="card content-card mb-3">
+            <div class="card-header-custom">
+                <div>
+                    <h6 class="card-title-custom">Handling IT Staff</h6>
+                </div>
+                <i class="fas fa-user-shield text-info"></i>
+            </div>
+            <div class="card-body p-3">
+                {% if activity.staff_name %}
+                <div class="person-card">
+                    <div class="person-avatar person-staff">
+                        {{ activity.staff_name[0].upper() }}
+                    </div>
+                    <div class="person-details">
+                        <div class="person-name">{{ activity.staff_name }}</div>
+                        <div class="person-role text-info">IT Staff</div>
+                    </div>
+                </div>
+                {% if activity.staff_email %}
+                <div class="contact-row">
+                    <i class="fas fa-envelope text-muted"></i>
+                    <a href="mailto:{{ activity.staff_email }}">{{ activity.staff_email }}</a>
+                </div>
+                {% endif %}
+                {% if activity.staff_phone %}
+                <div class="contact-row">
+                    <i class="fas fa-phone text-muted"></i>
+                    <span>{{ activity.staff_phone }}</span>
+                </div>
+                {% endif %}
+                {% else %}
+                <div class="empty-state-sm">
+                    <i class="fas fa-user-slash"></i>
+                    <p>Awaiting acceptance</p>
+                    {% if current_user.get('role') in ['it_staff', 'admin'] %}
+                    <form method="POST" action="{{ url_for('accept_activity', activity_id=activity.id) }}" class="mt-1">
+                        <button type="submit" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-hand-paper me-1"></i>Accept Ticket
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Ticket Meta -->
+        <div class="card content-card">
+            <div class="card-header-custom">
+                <div><h6 class="card-title-custom">Ticket Info</h6></div>
+            </div>
+            <div class="card-body p-3">
+                <div class="info-row">
+                    <span class="info-label">Ticket No.</span>
+                    <span class="ticket-no">{{ activity.ticket_no }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Priority</span>
+                    <span class="priority-badge priority-{{ activity.priority }}">{{ activity.priority|capitalize }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Status</span>
+                    <span class="status-badge status-{{ activity.status }}">{{ activity.status|replace('_',' ')|capitalize }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Category</span>
+                    <span>{{ activity.category_name or '—' }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Filed</span>
+                    <span class="small">{{ activity.created_at.strftime('%b %d, %Y') if activity.created_at else '—' }}</span>
+                </div>
+                {% if activity.resolved_at %}
+                <div class="info-row">
+                    <span class="info-label">Resolved</span>
+                    <span class="small text-success">{{ activity.resolved_at.strftime('%b %d, %Y') }}</span>
+                </div>
+                {% endif %}
+                {% if activity.rating %}
+                <div class="info-row">
+                    <span class="info-label">Rating</span>
+                    <span class="small">
+                        {% for i in range(1, 6) %}
+                            {% if i <= activity.rating %}<i class="fas fa-star text-warning"></i>{% else %}<i class="far fa-star text-muted"></i>{% endif %}
+                        {% endfor %}
+                        <span class="ms-1 text-muted">({{ activity.rating }}/5)</span>
+                    </span>
+                </div>
+                {% if activity.feedback %}
+                <div class="info-row d-block">
+                    <span class="info-label">Feedback</span>
+                    <div class="small text-muted mt-1 fst-italic">"{{ activity.feedback }}"</div>
+                </div>
+                {% endif %}
+                {% endif %}
+                <div class="mt-3 d-grid gap-2">
+                    <a href="{{ url_for('edit_activity', activity_id=activity.id) }}" class="btn btn-outline-warning btn-sm">
+                        <i class="fas fa-edit me-1"></i> Edit Ticket
+                    </a>
+                    {% if current_user.get('role') == 'admin' %}
+                    <button type="button" class="btn btn-outline-danger btn-sm"
+                            onclick="confirmDelete('{{ url_for('delete_activity', activity_id=activity.id) }}')">
+                        <i class="fas fa-trash me-1"></i> Delete Ticket
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-body text-center p-4">
+                <div class="delete-icon-wrap mb-3"><i class="fas fa-exclamation-triangle"></i></div>
+                <h6 class="fw-bold mb-1">Delete Ticket?</h6>
+                <p class="text-muted small mb-3">{{ activity.ticket_no }} will be permanently deleted.</p>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-secondary flex-fill" data-bs-dismiss="modal">Cancel</button>
+                    <form id="deleteForm" method="POST" class="flex-fill">
+                        <button type="submit" class="btn btn-danger w-100">Delete</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmDelete(url) {
+    document.getElementById('deleteForm').action = url;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+</script>
+{% endblock %}

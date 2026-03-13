@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% block title %}IT Staff &mdash; IT Support AMS{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">IT Staff</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">IT Staff Management</h1>
+        <p class="page-sub">Manage IT support team members and their accounts.</p>
+    </div>
+    <a href="{{ url_for('add_staff') }}" class="btn btn-primary">
+        <i class="fas fa-user-plus me-2"></i>Add Staff
+    </a>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="stat-card stat-total">
+            <div class="stat-icon"><i class="fas fa-users"></i></div>
+            <div class="stat-value">{{ staff|length }}</div>
+            <div class="stat-label">Total Accounts</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card stat-resolved">
+            <div class="stat-icon"><i class="fas fa-user-check"></i></div>
+            <div class="stat-value">{{ staff|selectattr('is_active', 'equalto', 1)|list|length }}</div>
+            <div class="stat-label">Active Members</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card stat-pending">
+            <div class="stat-icon"><i class="fas fa-crown"></i></div>
+            <div class="stat-value">{{ staff|selectattr('role', 'equalto', 'admin')|list|length }}</div>
+            <div class="stat-label">Administrators</div>
+        </div>
+    </div>
+</div>
+
+<!-- Admins Section -->
+{% set admins = staff|selectattr('role', 'equalto', 'admin')|list %}
+{% if admins %}
+<div class="section-label mb-2"><i class="fas fa-crown me-2 text-warning"></i>Administrators</div>
+<div class="row g-3 mb-4">
+    {% for s in admins %}
+    <div class="col-md-6 col-lg-4">
+        <div class="staff-card {{ 'staff-inactive' if not s.is_active }}">
+            <div class="staff-card-header">
+                <div class="staff-avatar staff-admin">{{ s.full_name[0].upper() }}</div>
+                <div class="staff-info">
+                    <div class="staff-name">{{ s.full_name }}</div>
+                    <div class="staff-username">@{{ s.username }}</div>
+                </div>
+                <span class="badge bg-warning text-dark ms-auto">Admin</span>
+            </div>
+            <div class="staff-card-body">
+                <div class="staff-detail"><i class="fas fa-envelope text-muted"></i>{{ s.email }}</div>
+                {% if s.phone %}<div class="staff-detail"><i class="fas fa-phone text-muted"></i>{{ s.phone }}</div>{% endif %}
+                {% if s.department %}<div class="staff-detail"><i class="fas fa-building text-muted"></i>{{ s.department }}</div>{% endif %}
+                <div class="staff-stats">
+                    <div class="ss-item">
+                        <div class="ss-num">{{ s.total_assigned or 0 }}</div>
+                        <div class="ss-label">Accepted</div>
+                    </div>
+                    <div class="ss-item">
+                        <div class="ss-num text-success">{{ s.total_resolved or 0 }}</div>
+                        <div class="ss-label">Resolved</div>
+                    </div>
+                    <div class="ss-item">
+                        <div class="ss-num text-warning">{{ s.open_tickets or 0 }}</div>
+                        <div class="ss-label">Open</div>
+                    </div>
+                </div>
+            </div>
+            <div class="staff-card-footer">
+                <span class="{{ 'active-dot' if s.is_active else 'inactive-dot' }}"></span>
+                {{ 'Active' if s.is_active else 'Inactive' }}
+                <div class="ms-auto d-flex gap-1">
+                    <a href="{{ url_for('edit_staff', staff_id=s.id) }}" class="action-btn action-edit" title="Edit">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    {% if s.id != current_user.get('user_id') %}
+                    <form method="POST" action="{{ url_for('toggle_staff', staff_id=s.id) }}" class="d-inline">
+                        <button type="submit" class="action-btn {{ 'action-delete' if s.is_active else 'action-restore' }}"
+                                title="{{ 'Deactivate' if s.is_active else 'Activate' }}">
+                            <i class="fas {{ 'fa-user-slash' if s.is_active else 'fa-user-check' }}"></i>
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- IT Staff Section -->
+{% set it_staff = staff|selectattr('role', 'equalto', 'it_staff')|list %}
+{% if it_staff %}
+<div class="section-label mb-2"><i class="fas fa-user-cog me-2 text-info"></i>IT Staff Members</div>
+<div class="row g-3">
+    {% for s in it_staff %}
+    <div class="col-md-6 col-lg-4">
+        <div class="staff-card {{ 'staff-inactive' if not s.is_active }}">
+            <div class="staff-card-header">
+                <div class="staff-avatar staff-it">{{ s.full_name[0].upper() }}</div>
+                <div class="staff-info">
+                    <div class="staff-name">{{ s.full_name }}</div>
+                    <div class="staff-username">@{{ s.username }}</div>
+                </div>
+                <span class="badge bg-info text-dark ms-auto">IT Staff</span>
+            </div>
+            <div class="staff-card-body">
+                <div class="staff-detail"><i class="fas fa-envelope text-muted"></i>{{ s.email }}</div>
+                {% if s.phone %}<div class="staff-detail"><i class="fas fa-phone text-muted"></i>{{ s.phone }}</div>{% endif %}
+                {% if s.department %}<div class="staff-detail"><i class="fas fa-building text-muted"></i>{{ s.department }}</div>{% endif %}
+                <div class="staff-stats">
+                    <div class="ss-item">
+                        <div class="ss-num">{{ s.total_assigned or 0 }}</div>
+                        <div class="ss-label">Accepted</div>
+                    </div>
+                    <div class="ss-item">
+                        <div class="ss-num text-success">{{ s.total_resolved or 0 }}</div>
+                        <div class="ss-label">Resolved</div>
+                    </div>
+                    <div class="ss-item">
+                        <div class="ss-num text-warning">{{ s.open_tickets or 0 }}</div>
+                        <div class="ss-label">Open</div>
+                    </div>
+                </div>
+            </div>
+            <div class="staff-card-footer">
+                <span class="{{ 'active-dot' if s.is_active else 'inactive-dot' }}"></span>
+                {{ 'Active' if s.is_active else 'Inactive' }}
+                <div class="ms-auto d-flex gap-1">
+                    <a href="{{ url_for('edit_staff', staff_id=s.id) }}" class="action-btn action-edit" title="Edit">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    <form method="POST" action="{{ url_for('toggle_staff', staff_id=s.id) }}" class="d-inline">
+                        <button type="submit" class="action-btn {{ 'action-delete' if s.is_active else 'action-restore' }}"
+                                title="{{ 'Deactivate' if s.is_active else 'Activate' }}">
+                            <i class="fas {{ 'fa-user-slash' if s.is_active else 'fa-user-check' }}"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if not staff %}
+<div class="empty-state py-5">
+    <i class="fas fa-users"></i>
+    <h6>No staff accounts found</h6>
+    <a href="{{ url_for('add_staff') }}" class="btn btn-primary btn-sm mt-2">Add Staff Member</a>
+</div>
+{% endif %}
+{% endblock %}

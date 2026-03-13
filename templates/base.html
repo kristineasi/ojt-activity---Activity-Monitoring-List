@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}IT Support Activity Monitoring System{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body class="has-sidebar">
+
+    <!-- ===== SIDEBAR ===== -->
+    <nav id="sidebar" class="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-icon">
+                <img src="{{ url_for('static', filename='img/mdc-logo.png') }}" alt="MDC Logo" class="brand-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';">
+                <i class="fas fa-headset" style="display:none;"></i>
+            </div>
+            <div class="brand-text">
+                <span class="brand-name">IT SAMS</span>
+                <span class="brand-sub">Support Monitor</span>
+            </div>
+        </div>
+
+        <div class="sidebar-profile">
+            <div class="sp-avatar">{{ current_user.get('full_name', 'U')[0].upper() }}</div>
+            <div class="sp-info">
+                <div class="sp-name">{{ current_user.get('full_name', 'User') }}</div>
+                {% if current_user.get('role') == 'admin' %}
+                    <span class="sp-badge badge-admin"><i class="fas fa-crown me-1"></i>Admin</span>
+                {% elif current_user.get('role') == 'it_staff' %}
+                    <span class="sp-badge badge-staff"><i class="fas fa-user-cog me-1"></i>IT Staff</span>
+                {% else %}
+                    <span class="sp-badge badge-emp"><i class="fas fa-user me-1"></i>Employee</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="sidebar-divider"></div>
+
+        <ul class="sidebar-nav">
+            {% if current_user.get('role') == 'employee' %}
+            <li class="nav-section-label">MY REQUESTS</li>
+            <li class="nav-item {% if request.endpoint in ('my_tickets',) %}active{% endif %}">
+                <a href="{{ url_for('my_tickets') }}" class="nav-link-item">
+                    <span class="nav-icon"><i class="fas fa-ticket-alt"></i></span>
+                    <span class="nav-text">My Tickets</span>
+                    {% if pending_count > 0 %}
+                    <span class="nav-badge">{{ pending_count }}</span>
+                    {% endif %}
+                </a>
+            </li>
+            <li class="nav-item {% if request.endpoint == 'submit_ticket' %}active{% endif %}">
+                <a href="{{ url_for('submit_ticket') }}" class="nav-link-item">
+                    <span class="nav-icon"><i class="fas fa-plus-circle"></i></span>
+                    <span class="nav-text">Submit Request</span>
+                </a>
+            </li>
+            {% else %}
+            <li class="nav-section-label">MAIN MENU</li>
+
+            <li class="nav-item {% if request.endpoint == 'dashboard' %}active{% endif %}">
+                <a href="{{ url_for('dashboard') }}" class="nav-link-item">
+                    <span class="nav-icon"><i class="fas fa-th-large"></i></span>
+                    <span class="nav-text">Dashboard</span>
+                </a>
+            </li>
+
+            <li class="nav-item {% if request.endpoint and 'activit' in request.endpoint %}active{% endif %}">
+                <a href="{{ url_for('activities') }}" class="nav-link-item">
+                    <span class="nav-icon"><i class="fas fa-ticket-alt"></i></span>
+                    <span class="nav-text">Activities</span>
+                    {% if pending_count > 0 %}
+                    <span class="nav-badge">{{ pending_count }}</span>
+                    {% endif %}
+                </a>
+            </li>
+
+            {% if current_user.get('role') == 'admin' %}
+            <li class="nav-item {% if request.endpoint and 'staff' in request.endpoint %}active{% endif %}">
+                <a href="{{ url_for('staff') }}" class="nav-link-item">
+                    <span class="nav-icon"><i class="fas fa-user-shield"></i></span>
+                    <span class="nav-text">IT Staff</span>
+                </a>
+            </li>
+            <li class="nav-item {% if request.endpoint and 'categor' in request.endpoint %}active{% endif %}">
+                <a href="{{ url_for('categories') }}" class="nav-link-item">
+                    <span class="nav-icon"><i class="fas fa-tags"></i></span>
+                    <span class="nav-text">Categories</span>
+                </a>
+            </li>
+            {% endif %}
+
+            <li class="nav-item {% if request.endpoint and 'report' in request.endpoint %}active{% endif %}">
+                <a href="{{ url_for('reports') }}" class="nav-link-item">
+                    <span class="nav-icon"><i class="fas fa-chart-pie"></i></span>
+                    <span class="nav-text">Reports</span>
+                </a>
+            </li>
+            {% endif %}
+
+            <li class="nav-section-label">ACCOUNT</li>
+
+            <li class="nav-item {% if request.endpoint and 'profile' in request.endpoint %}active{% endif %}">
+                <a href="{{ url_for('profile') }}" class="nav-link-item">
+                    <span class="nav-icon"><i class="fas fa-user-circle"></i></span>
+                    <span class="nav-text">My Profile</span>
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a href="{{ url_for('logout') }}" class="nav-link-item nav-logout">
+                    <span class="nav-icon"><i class="fas fa-sign-out-alt"></i></span>
+                    <span class="nav-text">Logout</span>
+                </a>
+            </li>
+        </ul>
+
+        <div class="sidebar-footer">
+            <i class="fas fa-circle text-success me-1" style="font-size:8px;"></i>
+            System Online
+        </div>
+    </nav>
+
+    <!-- ===== MAIN WRAPPER ===== -->
+    <div class="main-wrapper" id="mainWrapper">
+
+        <!-- TOP HEADER -->
+        <header class="top-header">
+            <div class="header-left">
+                <button class="sidebar-toggler" id="sidebarToggler">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <nav aria-label="breadcrumb" class="ms-2 d-none d-md-block">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item">
+                            {% if current_user.get('role') == 'employee' %}
+                            <a href="{{ url_for('my_tickets') }}"><i class="fas fa-home"></i></a>
+                            {% else %}
+                            <a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i></a>
+                            {% endif %}
+                        </li>
+                        {% block breadcrumb %}{% endblock %}
+                    </ol>
+                </nav>
+            </div>
+            <div class="header-right">
+                {% if current_user.get('role') == 'employee' %}
+                <a href="{{ url_for('submit_ticket') }}" class="btn btn-primary btn-sm header-btn me-2">
+                    <i class="fas fa-plus me-1"></i><span class="d-none d-sm-inline">Submit Request</span>
+                </a>
+                {% endif %}
+                <div class="dropdown">
+                    <button class="header-user dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                        <div class="hu-avatar">{{ current_user.get('full_name','U')[0].upper() }}</div>
+                        <span class="hu-name d-none d-md-inline">{{ current_user.get('full_name','User').split()[0] }}</span>
+                        <i class="fas fa-chevron-down ms-1 d-none d-md-inline" style="font-size:11px;"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                        <li class="dropdown-header">
+                            <div class="fw-semibold">{{ current_user.get('full_name','') }}</div>
+                            <small class="text-muted">{{ current_user.get('email','') }}</small>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{{ url_for('profile') }}"><i class="fas fa-user me-2 text-primary"></i>My Profile</a></li>
+                        {% if current_user.get('role') == 'employee' %}
+                        <li><a class="dropdown-item" href="{{ url_for('my_tickets') }}"><i class="fas fa-ticket-alt me-2 text-info"></i>My Tickets</a></li>
+                        {% else %}
+                        <li><a class="dropdown-item" href="{{ url_for('activities') }}"><i class="fas fa-ticket-alt me-2 text-info"></i>All Tickets</a></li>
+                        {% endif %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </header>
+
+        <!-- PAGE CONTENT -->
+        <main class="page-content">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                <div class="alert-container">
+                    {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show custom-alert" role="alert">
+                        <i class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'danger' %}times-circle{% elif category == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %} me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- Overlay for mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

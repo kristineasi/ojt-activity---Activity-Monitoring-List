@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% block title %}Categories &mdash; IT Support AMS{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Categories</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Ticket Categories</h1>
+        <p class="page-sub">Manage the problem categories employees can select when submitting a request.</p>
+    </div>
+    <a href="{{ url_for('add_category') }}" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>Add Category
+    </a>
+</div>
+
+<div class="card content-card">
+    <div class="card-body p-0">
+        {% if categories %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4" style="width:60px;">Icon</th>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th class="text-center">Tickets</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in categories %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="cat-icon-preview">
+                                <i class="fas {{ c.icon or 'fa-tools' }}"></i>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="fw-semibold">{{ c.name }}</div>
+                        </td>
+                        <td class="text-muted small">
+                            {{ c.description or '—' }}
+                        </td>
+                        <td class="text-center">
+                            <span class="badge {% if c.usage_count > 0 %}bg-primary{% else %}bg-light text-muted border{% endif %}">
+                                {{ c.usage_count }}
+                            </span>
+                        </td>
+                        <td class="text-end pe-4">
+                            <a href="{{ url_for('edit_category', cat_id=c.id) }}" class="btn btn-outline-warning btn-sm me-1">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            {% if c.usage_count == 0 %}
+                            <button type="button" class="btn btn-outline-danger btn-sm"
+                                    onclick="confirmDelete('{{ url_for('delete_category', cat_id=c.id) }}', '{{ c.name }}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            {% else %}
+                            <button class="btn btn-outline-secondary btn-sm" disabled title="Has existing tickets">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state p-5 text-center">
+            <div class="mb-3"><i class="fas fa-tags fa-3x text-muted opacity-50"></i></div>
+            <h6 class="fw-semibold text-muted">No categories yet</h6>
+            <p class="text-muted small mb-3">Employees cannot submit requests until you add at least one category.</p>
+            <a href="{{ url_for('add_category') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Add First Category
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-body text-center p-4">
+                <div class="delete-icon-wrap mb-3"><i class="fas fa-exclamation-triangle"></i></div>
+                <h6 class="fw-bold mb-1">Delete Category?</h6>
+                <p class="text-muted small mb-3" id="deleteMsg"></p>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-secondary flex-fill" data-bs-dismiss="modal">Cancel</button>
+                    <form id="deleteForm" method="POST" class="flex-fill">
+                        <button type="submit" class="btn btn-danger w-100">Delete</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.cat-icon-preview {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: var(--primary-light); color: var(--primary);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+}
+</style>
+<script>
+function confirmDelete(url, name) {
+    document.getElementById('deleteForm').action = url;
+    document.getElementById('deleteMsg').textContent = '"' + name + '" will be permanently deleted.';
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+</script>
+{% endblock %}

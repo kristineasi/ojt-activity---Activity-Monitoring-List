@@ -1,0 +1,422 @@
+{% extends 'base.html' %}
+{% block title %}Reports &mdash; IT Support AMS{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Reports</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Reports &amp; Analytics</h1>
+        <p class="page-sub">Performance overview and support activity insights.</p>
+    </div>
+    <div class="page-actions">
+        <button type="button" onclick="exportReportPdf(event)" class="btn btn-primary">
+            <i class="fas fa-file-pdf me-2"></i>Export PDF
+        </button>
+        <button onclick="window.print()" class="btn btn-outline-secondary">
+            <i class="fas fa-print me-2"></i>Print Report
+        </button>
+    </div>
+</div>
+
+<div id="reportExportArea">
+
+<!-- Charts Row -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-8">
+        <div class="card content-card h-100">
+            <div class="card-header-custom">
+                <div>
+                    <h6 class="card-title-custom">Monthly Ticket Trend (12 Months)</h6>
+                    <p class="card-sub-custom">Filed vs Resolved over time</p>
+                </div>
+                <i class="fas fa-chart-area text-primary"></i>
+            </div>
+            <div class="card-body p-3">
+                <canvas id="trendChart" height="110"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card content-card h-100">
+            <div class="card-header-custom">
+                <div>
+                    <h6 class="card-title-custom">Departments</h6>
+                    <p class="card-sub-custom">Requests by department</p>
+                </div>
+                <i class="fas fa-building text-info"></i>
+            </div>
+            <div class="card-body p-3 d-flex align-items-center justify-content-center">
+                <canvas id="deptChart" height="220" style="max-width:260px;"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Category Report Table -->
+<div class="card content-card mb-4">
+    <div class="card-header-custom">
+        <div>
+            <h6 class="card-title-custom">Tickets by Category</h6>
+            <p class="card-sub-custom">Support type breakdown with resolution rates</p>
+        </div>
+        <i class="fas fa-tags text-warning"></i>
+    </div>
+    <div class="card-body p-0">
+        {% if category_report %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 custom-table">
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th class="text-center">Total</th>
+                        <th class="text-center">Pending</th>
+                        <th class="text-center">In Progress</th>
+                        <th class="text-center">Resolved</th>
+                        <th>Resolution Rate</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in category_report %}
+                    {% set total = c.total or 0 %}
+                    {% set resolved = c.resolved or 0 %}
+                    {% set rate = ((resolved / total * 100)|int) if total > 0 else 0 %}
+                    <tr>
+                        <td>
+                            <span class="cat-badge">
+                                <i class="fas {{ c.icon or 'fa-tools' }} me-1"></i>{{ c.name }}
+                            </span>
+                        </td>
+                        <td class="text-center"><strong>{{ total }}</strong></td>
+                        <td class="text-center"><span class="status-badge status-pending">{{ c.pending or 0 }}</span></td>
+                        <td class="text-center"><span class="status-badge status-in_progress">{{ c.in_progress or 0 }}</span></td>
+                        <td class="text-center"><span class="status-badge status-resolved">{{ resolved }}</span></td>
+                        <td style="min-width:150px;">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="progress flex-fill" style="height:8px;">
+                                    <div class="progress-bar bg-success" style="width:{{ rate }}%;"></div>
+                                </div>
+                                <span class="small fw-semibold">{{ rate }}%</span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state py-4"><i class="fas fa-tags"></i><p>No data available yet.</p></div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Staff Performance -->
+<div class="card content-card mb-4">
+    <div class="card-header-custom">
+        <div>
+            <h6 class="card-title-custom">IT Staff Performance</h6>
+            <p class="card-sub-custom">Ticket acceptance and resolution by staff member</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" onclick="printStaffReport()" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-print me-1"></i>Print IT Staff
+            </button>
+            <i class="fas fa-trophy text-warning"></i>
+        </div>
+    </div>
+    <div class="card-body p-0" id="itStaffReportSection">
+        {% if staff_report %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 custom-table">
+                <thead>
+                    <tr>
+                        <th>Staff Member</th>
+                        <th>Department</th>
+                        <th class="text-center">Total Accepted</th>
+                        <th class="text-center">Pending</th>
+                        <th class="text-center">In Progress</th>
+                        <th class="text-center">Resolved</th>
+                        <th>Performance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in staff_report %}
+                    {% set total = s.total_assigned or 0 %}
+                    {% set resolved = s.resolved or 0 %}
+                    {% set rate = ((resolved / total * 100)|int) if total > 0 else 0 %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="mini-avatar">{{ s.full_name[0].upper() }}</div>
+                                <span class="fw-semibold">{{ s.full_name }}</span>
+                            </div>
+                        </td>
+                        <td>{{ s.department or '—' }}</td>
+                        <td class="text-center"><strong>{{ total }}</strong></td>
+                        <td class="text-center"><span class="status-badge status-pending">{{ s.pending or 0 }}</span></td>
+                        <td class="text-center"><span class="status-badge status-in_progress">{{ s.in_progress or 0 }}</span></td>
+                        <td class="text-center"><span class="status-badge status-resolved">{{ resolved }}</span></td>
+                        <td style="min-width:150px;">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="progress flex-fill" style="height:8px;">
+                                    <div class="progress-bar bg-primary" style="width:{{ rate }}%;"></div>
+                                </div>
+                                <span class="small fw-semibold">{{ rate }}%</span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state py-4"><i class="fas fa-user-tie"></i><p>No staff data available.</p></div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Priority Breakdown -->
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card content-card">
+            <div class="card-header-custom">
+                <div>
+                    <h6 class="card-title-custom">Priority Breakdown</h6>
+                    <p class="card-sub-custom">Tickets by priority level</p>
+                </div>
+                <i class="fas fa-exclamation-circle text-danger"></i>
+            </div>
+            <div class="card-body p-0">
+                {% if priority_report %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 custom-table">
+                        <thead>
+                            <tr>
+                                <th>Priority</th>
+                                <th class="text-center">Total</th>
+                                <th class="text-center">Resolved</th>
+                                <th>Rate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in priority_report %}
+                            {% set rate = ((p.resolved / p.count * 100)|int) if p.count > 0 else 0 %}
+                            <tr>
+                                <td><span class="priority-badge priority-{{ p.priority }}">{{ p.priority|capitalize }}</span></td>
+                                <td class="text-center"><strong>{{ p.count }}</strong></td>
+                                <td class="text-center">{{ p.resolved or 0 }}</td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="progress flex-fill" style="height:6px;">
+                                            <div class="progress-bar" style="width:{{ rate }}%;background:
+                                                {% if p.priority=='critical' %}#ef4444{% elif p.priority=='high' %}#f97316{% elif p.priority=='medium' %}#f59e0b{% else %}#10b981{% endif %};"></div>
+                                        </div>
+                                        <span class="small">{{ rate }}%</span>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state py-4"><p>No data yet.</p></div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card content-card h-100">
+            <div class="card-header-custom">
+                <div>
+                    <h6 class="card-title-custom">Requests by Department</h6>
+                    <p class="card-sub-custom">Which departments need the most IT support</p>
+                </div>
+                <i class="fas fa-building text-success"></i>
+            </div>
+            <div class="card-body p-3">
+                {% if dept_report %}
+                {% set max_count = dept_report[0].total if dept_report else 1 %}
+                {% for d in dept_report %}
+                <div class="dept-bar-row">
+                    <div class="dept-label">{{ d.department }}</div>
+                    <div class="dept-bar-wrap">
+                        <div class="dept-bar-fill" style="width:{{ [(d.total / (max_count if max_count > 0 else 1) * 100), 100]|min }}%;"></div>
+                    </div>
+                    <div class="dept-count">{{ d.total }}</div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="empty-state-sm"><i class="fas fa-building"></i><p>No data yet.</p></div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+Chart.defaults.font.family = "'Inter', sans-serif";
+
+const trendData = {{ monthly_trend | tojson }};
+new Chart(document.getElementById('trendChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+        labels: trendData.map(d => d.month),
+        datasets: [
+            {
+                label: 'Total Filed',
+                data: trendData.map(d => d.total),
+                backgroundColor: 'rgba(67,97,238,0.7)',
+                borderRadius: 5,
+                borderSkipped: false,
+            },
+            {
+                label: 'Resolved',
+                data: trendData.map(d => d.resolved),
+                backgroundColor: 'rgba(16,185,129,0.7)',
+                borderRadius: 5,
+                borderSkipped: false,
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { position: 'top', labels: { boxWidth: 12 } } },
+        scales: {
+            y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { stepSize: 1 } },
+            x: { grid: { display: false } }
+        }
+    }
+});
+
+const deptData = {{ dept_report | tojson }};
+new Chart(document.getElementById('deptChart').getContext('2d'), {
+    type: 'doughnut',
+    data: {
+        labels: deptData.map(d => d.department),
+        datasets: [{
+            data: deptData.map(d => d.total),
+            backgroundColor: ['#4361ee','#4cc9f0','#f72585','#10b981','#f59e0b','#7209b7','#3a86ff','#ef4444'],
+            borderWidth: 2, borderColor: '#fff', hoverOffset: 5
+        }]
+    },
+    options: {
+        responsive: true,
+        cutout: '55%',
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 8, font: { size: 11 } } } }
+    }
+});
+
+function printStaffReport() {
+    const section = document.getElementById('itStaffReportSection');
+    if (!section) {
+        window.print();
+        return;
+    }
+
+    const printWindow = window.open('', '_blank', 'width=1000,height=700');
+    const now = new Date();
+    const generatedAt = now.toLocaleString();
+
+    printWindow.document.write(`
+        <html>
+        <head>
+            <title>IT Staff Performance Report</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 24px; color: #13284a; }
+                h2 { margin: 0 0 6px; color: #082a63; }
+                p { margin: 0 0 16px; color: #6b7280; font-size: 12px; }
+                table { width: 100%; border-collapse: collapse; font-size: 12px; }
+                th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; }
+                th { background: #e9f0fb; color: #082a63; }
+                .status-badge, .priority-badge { border: 1px solid #d1d5db; padding: 2px 6px; border-radius: 6px; }
+                .mini-avatar, .progress, .btn { display: none !important; }
+                .d-flex { display: block !important; }
+                @media print { body { margin: 12px; } }
+            </style>
+        </head>
+        <body>
+            <h2>IT Staff Performance Report</h2>
+            <p>Generated on ${generatedAt}</p>
+            ${section.innerHTML}
+        </body>
+        </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+    }, 300);
+}
+
+async function exportReportPdf(e) {
+    const target = document.getElementById('reportExportArea');
+    if (!target) {
+        alert('Report content not found.');
+        return;
+    }
+
+    const btn = e?.currentTarget;
+    const originalHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generating...';
+    }
+
+    try {
+        const canvas = await html2canvas(target, {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            windowWidth: document.documentElement.scrollWidth
+        });
+
+        const imgData = canvas.toDataURL('image/png');
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+
+        const pageWidth = 210;
+        const pageHeight = 297;
+        const margin = 8;
+        const printableWidth = pageWidth - (margin * 2);
+        const printableHeight = pageHeight - (margin * 2);
+        const imageHeight = (canvas.height * printableWidth) / canvas.width;
+
+        let heightLeft = imageHeight;
+        let position = margin;
+
+        pdf.addImage(imgData, 'PNG', margin, position, printableWidth, imageHeight);
+        heightLeft -= printableHeight;
+
+        while (heightLeft > 0) {
+            pdf.addPage();
+            position = margin - (imageHeight - heightLeft);
+            pdf.addImage(imgData, 'PNG', margin, position, printableWidth, imageHeight);
+            heightLeft -= printableHeight;
+        }
+
+        const now = new Date();
+        const stamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+        pdf.save(`it-support-report-${stamp}.pdf`);
+    } catch (err) {
+        console.error(err);
+        alert('Failed to export PDF. Please try again.');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
+    }
+}
+</script>
+{% endblock %}

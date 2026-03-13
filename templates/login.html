@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login &mdash; IT Support Activity Monitoring System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            background: #f3f6fb;
+            overflow: hidden;
+        }
+        .login-left {
+            flex: 1.2;
+            background: linear-gradient(135deg, #082a63 0%, #0a3578 45%, #0f4ca6 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 3rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .login-left::before {
+            content: '';
+            position: absolute;
+            width: 500px; height: 500px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(245,196,0,0.18) 0%, transparent 70%);
+            top: -100px; left: -100px;
+        }
+        .login-left::after {
+            content: '';
+            position: absolute;
+            width: 400px; height: 400px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(47,111,194,0.20) 0%, transparent 70%);
+            bottom: -80px; right: -80px;
+        }
+        .login-left-content { position: relative; z-index: 1; text-align: center; color: white; max-width: 420px; }
+        .brand-icon-wrap {
+            width: 90px; height: 90px; border-radius: 24px;
+            background: linear-gradient(135deg, #0f4ca6, #f5c400);
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 1.5rem;
+            box-shadow: 0 20px 60px rgba(8,42,99,0.35);
+        }
+        .brand-icon-wrap i { font-size: 42px; color: white; }
+        .brand-logo {
+            width: 76px;
+            height: 76px;
+            object-fit: contain;
+            border-radius: 14px;
+            background: #ffffff;
+            padding: 4px;
+        }
+        .brand-title { font-size: 2rem; font-weight: 800; line-height: 1.2; margin-bottom: 0.5rem; }
+        .brand-sub { font-size: 1.1rem; color: #f5c400; font-weight: 600; margin-bottom: 1.5rem; }
+        .brand-desc { font-size: 0.9rem; color: rgba(255,255,255,0.6); line-height: 1.7; }
+        .feature-list { margin-top: 2rem; text-align: left; }
+        .feature-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 0; color: rgba(255,255,255,0.8); font-size: 0.875rem;
+        }
+        .feature-item i { color: #4cc9f0; width: 18px; text-align: center; font-size: 1rem; }
+        .dots-decor {
+            position: absolute; bottom: 40px; left: 40px;
+            display: grid; grid-template-columns: repeat(6,1fr); gap: 8px;
+        }
+        .dots-decor span {
+            width: 5px; height: 5px; border-radius: 50%;
+            background: rgba(255,255,255,0.15);
+        }
+        /* Right Panel */
+        .login-right {
+            flex: 1;
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 3rem;
+        }
+        .login-form-wrap { width: 100%; max-width: 420px; }
+        .login-title { font-size: 1.75rem; font-weight: 700; color: #1e2140; margin-bottom: 0.35rem; }
+        .login-sub { color: #6c757d; font-size: 0.9rem; margin-bottom: 2rem; }
+        .form-label { font-weight: 600; font-size: 0.875rem; color: #374151; margin-bottom: 0.4rem; }
+        .input-group-custom {
+            position: relative; margin-bottom: 1.2rem;
+        }
+        .input-icon {
+            position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+            color: #9ca3af; font-size: 15px; z-index: 3;
+        }
+        .form-control-custom {
+            width: 100%; padding: 12px 14px 12px 42px;
+            border: 1.5px solid #e5e7eb; border-radius: 10px;
+            font-size: 0.9rem; font-family: 'Inter', sans-serif;
+            background: #f9fafb; transition: all 0.25s;
+            outline: none;
+        }
+        .form-control-custom:focus {
+            border-color: #0f4ca6;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(15,76,166,0.10);
+        }
+        .toggle-pw {
+            position: absolute; right: 14px; top: 50%;
+            transform: translateY(-50%); cursor: pointer;
+            color: #9ca3af; z-index: 3; background: none; border: none;
+            transition: color 0.2s;
+        }
+        .toggle-pw:hover { color: #0f4ca6; }
+        .btn-login {
+            width: 100%; padding: 13px;
+            background: linear-gradient(135deg, #0f4ca6, #082a63);
+            border: none; border-radius: 10px;
+            color: white; font-size: 0.95rem; font-weight: 600;
+            cursor: pointer; transition: all 0.3s;
+            font-family: 'Inter', sans-serif;
+            letter-spacing: 0.3px;
+        }
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(8,42,99,0.35);
+        }
+        .btn-login:active { transform: translateY(0); }
+        .alert-login {
+            padding: 10px 14px; border-radius: 8px;
+            font-size: 0.875rem; margin-bottom: 1.2rem;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .alert-danger { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+        .alert-success { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+        .alert-warning { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
+        .alert-info { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+        .login-footer { margin-top: 2rem; text-align: center; color: #9ca3af; font-size: 0.8rem; }
+        @media (max-width: 768px) {
+            .login-left { display: none; }
+            .login-right { padding: 2rem 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-left">
+        <div class="login-left-content">
+            <div class="brand-icon-wrap">
+                <img src="{{ url_for('static', filename='img/mdc-logo.png') }}" alt="MDC Logo" class="brand-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';">
+                <i class="fas fa-headset" style="display:none;"></i>
+            </div>
+            <div class="brand-title">IT Support</div>
+            <div class="brand-sub">Activity Monitoring System</div>
+            <div class="brand-desc">
+                A centralized platform to track, manage, and resolve IT support requests efficiently across your organization.
+            </div>
+            <div class="feature-list">
+                <div class="feature-item"><i class="fas fa-ticket-alt"></i><span>Real-time ticket tracking &amp; management</span></div>
+                <div class="feature-item"><i class="fas fa-users"></i><span>Employee support request management</span></div>
+                <div class="feature-item"><i class="fas fa-chart-line"></i><span>Performance reports &amp; analytics</span></div>
+                <div class="feature-item"><i class="fas fa-print"></i><span>Printer, WiFi, software &amp; hardware support</span></div>
+                <div class="feature-item"><i class="fas fa-shield-alt"></i><span>Secure role-based access control</span></div>
+            </div>
+        </div>
+        <div class="dots-decor">
+            {% for i in range(30) %}<span></span>{% endfor %}
+        </div>
+    </div>
+
+    <div class="login-right">
+        <div class="login-form-wrap">
+            <h1 class="login-title">Welcome Back!</h1>
+            <p class="login-sub">Sign in to access your IT Support dashboard.</p>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                    <div class="alert-login alert-{{ category }}">
+                        <i class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'danger' %}times-circle{% elif category == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %}"></i>
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="{{ url_for('login') }}">
+                <div>
+                    <label class="form-label">Username</label>
+                    <div class="input-group-custom">
+                        <i class="fas fa-user input-icon"></i>
+                        <input type="text" name="username" class="form-control-custom"
+                               placeholder="Enter your username" required autocomplete="username"
+                               value="{{ request.form.get('username','') }}">
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label">Password</label>
+                    <div class="input-group-custom" style="position:relative;">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" name="password" id="passwordInput"
+                               class="form-control-custom" placeholder="Enter your password"
+                               required autocomplete="current-password">
+                        <button type="button" class="toggle-pw" onclick="togglePassword()">
+                            <i class="fas fa-eye" id="pwIcon"></i>
+                        </button>
+                    </div>
+                </div>
+                <button type="submit" class="btn-login mt-1">
+                    <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                </button>
+            </form>
+
+            <div class="login-footer">
+                &copy; {{ 2024 }} IT Support Activity Monitoring System<br>
+                All rights reserved.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function togglePassword() {
+            const input = document.getElementById('passwordInput');
+            const icon = document.getElementById('pwIcon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        }
+    </script>
+</body>
+</html>

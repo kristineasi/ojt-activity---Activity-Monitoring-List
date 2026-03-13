@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% block title %}Submit Request &mdash; IT Support AMS{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('my_tickets') }}">My Tickets</a></li>
+<li class="breadcrumb-item active">Submit Request</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Submit a Support Request</h1>
+        <p class="page-sub">Describe your problem and our IT team will assist you.</p>
+    </div>
+    <a href="{{ url_for('my_tickets') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back to My Tickets
+    </a>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="card content-card">
+            <div class="card-header-custom">
+                <div>
+                    <h6 class="card-title-custom">Request Details</h6>
+                    <p class="card-sub-custom">Please fill in as much detail as possible.</p>
+                </div>
+                <i class="fas fa-headset text-primary"></i>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('submit_ticket') }}">
+                    <div class="mb-3">
+                        <label class="form-label required-label">Issue Title</label>
+                        <input type="text" name="title" class="form-control"
+                               placeholder="e.g. Cannot connect to company email"
+                               value="{{ request.form.get('title','') }}" required maxlength="200">
+                        <div class="form-hint">Be specific — describe the main problem in one sentence.</div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label required-label">Problem Category</label>
+                            <select name="category_id" class="form-select" required>
+                                <option value="">— Select Category —</option>
+                                {% for c in categories %}
+                                <option value="{{ c.id }}" {{ 'selected' if request.form.get('category_id')==c.id|string }}>
+                                    {{ c.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-hint">Pick the category that best matches your issue.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Priority Level</label>
+                            <select name="priority" class="form-select">
+                                <option value="low" {{ 'selected' if request.form.get('priority','medium')=='low' }}>🟢 Low — Minor, no urgent impact</option>
+                                <option value="medium" {{ 'selected' if request.form.get('priority','medium')=='medium' }}>🟡 Medium — Moderate impact</option>
+                                <option value="high" {{ 'selected' if request.form.get('priority')=='high' }}>🟠 High — Major work disruption</option>
+                                <option value="critical" {{ 'selected' if request.form.get('priority')=='critical' }}>🔴 Critical — Complete stoppage</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">Detailed Description</label>
+                        <textarea name="description" class="form-control" rows="5"
+                                  placeholder="Please describe the issue in detail:&#10;- What happened?&#10;- When did it start?&#10;- Any error messages?&#10;- What were you doing when it occurred?">{{ request.form.get('description','') }}</textarea>
+                        <div class="form-hint">The more details you provide, the faster we can help you.</div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="fas fa-paper-plane me-2"></i>Submit Request
+                        </button>
+                        <a href="{{ url_for('my_tickets') }}" class="btn btn-outline-secondary px-4">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- What to expect -->
+        <div class="card content-card mb-3">
+            <div class="card-header-custom">
+                <div>
+                    <h6 class="card-title-custom">What Happens Next?</h6>
+                </div>
+            </div>
+            <div class="card-body p-3">
+                <div class="step-item">
+                    <div class="step-num">1</div>
+                    <div class="step-text">
+                        <div class="fw-semibold small">Ticket Created</div>
+                        <div class="text-muted" style="font-size:0.78rem;">Your request gets a unique ticket number.</div>
+                    </div>
+                </div>
+                <div class="step-item mt-2">
+                    <div class="step-num">2</div>
+                    <div class="step-text">
+                        <div class="fw-semibold small">Accepted by IT Staff</div>
+                        <div class="text-muted" style="font-size:0.78rem;">An IT technician will accept and handle your ticket.</div>
+                    </div>
+                </div>
+                <div class="step-item mt-2">
+                    <div class="step-num">3</div>
+                    <div class="step-text">
+                        <div class="fw-semibold small">Problem Resolved</div>
+                        <div class="text-muted" style="font-size:0.78rem;">IT staff resolves the issue and updates the ticket.</div>
+                    </div>
+                </div>
+                <div class="step-item mt-2">
+                    <div class="step-num">4</div>
+                    <div class="step-text">
+                        <div class="fw-semibold small">Rate Your Experience</div>
+                        <div class="text-muted" style="font-size:0.78rem;">You can rate the support once your ticket is resolved.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category Guide -->
+        {% if categories %}
+        <div class="card content-card">
+            <div class="card-header-custom">
+                <div>
+                    <h6 class="card-title-custom">Category Guide</h6>
+                </div>
+            </div>
+            <div class="card-body p-3">
+                {% for c in categories %}
+                <div class="category-guide-item">
+                    <span class="cg-icon"><i class="fas {{ c.icon }}"></i></span>
+                    <div>
+                        <div class="fw-semibold small">{{ c.name }}</div>
+                        {% if c.description %}
+                        <div class="text-muted" style="font-size:0.75rem;">{{ c.description[:60] }}{% if c.description|length > 60 %}...{% endif %}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

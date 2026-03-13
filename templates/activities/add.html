@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% block title %}New Ticket &mdash; IT Support AMS{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('activities') }}">Activities</a></li>
+<li class="breadcrumb-item active">New Ticket</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Create New Ticket</h1>
+        <p class="page-sub">Log a new IT support request.</p>
+    </div>
+    <a href="{{ url_for('activities') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back to List
+    </a>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="card content-card">
+            <div class="card-header-custom">
+                <div>
+                    <h6 class="card-title-custom">Ticket Details</h6>
+                    <p class="card-sub-custom">Fill in the information below</p>
+                </div>
+                <i class="fas fa-ticket-alt text-primary"></i>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('add_activity') }}" id="activityForm">
+                    <div class="mb-3">
+                        <label class="form-label required-label">Issue Title</label>
+                        <input type="text" name="title" class="form-control"
+                               placeholder="e.g. Printer not working in Room 201"
+                               value="{{ request.form.get('title','') }}" required maxlength="200">
+                        <div class="form-hint">Be specific and descriptive about the issue.</div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label required-label">Category</label>
+                            <select name="category_id" class="form-select" required>
+                                <option value="">— Select Category —</option>
+                                {% for c in categories %}
+                                <option value="{{ c.id }}" {{ 'selected' if request.form.get('category_id')==c.id|string }}>
+                                    {{ c.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label required-label">Requester Name</label>
+                            <input type="text" name="requester_name" class="form-control"
+                                   placeholder="e.g. Alex Rosario"
+                                   value="{{ request.form.get('requester_name','') }}" required maxlength="100">
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Requester Department</label>
+                            <input type="text" name="requester_department" class="form-control"
+                                   placeholder="e.g. Accounting"
+                                   value="{{ request.form.get('requester_department','') }}" maxlength="100">
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Priority</label>
+                            <select name="priority" class="form-select">
+                                <option value="low" {{ 'selected' if request.form.get('priority','medium')=='low' }}>🟢 Low</option>
+                                <option value="medium" {{ 'selected' if request.form.get('priority','medium')=='medium' }}>🟡 Medium</option>
+                                <option value="high" {{ 'selected' if request.form.get('priority','medium')=='high' }}>🟠 High</option>
+                                <option value="critical" {{ 'selected' if request.form.get('priority','medium')=='critical' }}>🔴 Critical</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Initial Status</label>
+                            <select name="status" class="form-select">
+                                <option value="pending" {{ 'selected' if request.form.get('status','pending')=='pending' }}>Pending</option>
+                                <option value="in_progress" {{ 'selected' if request.form.get('status')=='in_progress' }}>In Progress</option>
+                                <option value="resolved" {{ 'selected' if request.form.get('status')=='resolved' }}>Resolved</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea name="description" class="form-control" rows="4"
+                                  placeholder="Describe the issue in detail — what happened, when it started, any error messages, etc.">{{ request.form.get('description','') }}</textarea>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">Internal Notes</label>
+                        <textarea name="notes" class="form-control" rows="3"
+                                  placeholder="Add any internal notes or remarks for IT staff only...">{{ request.form.get('notes','') }}</textarea>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="fas fa-save me-2"></i>Create Ticket
+                        </button>
+                        <a href="{{ url_for('activities') }}" class="btn btn-outline-secondary px-4">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- Category Guide -->
+        <div class="card content-card mb-3">
+            <div class="card-header-custom">
+                <div>
+                    <h6 class="card-title-custom">Support Categories</h6>
+                    <p class="card-sub-custom">Quick reference</p>
+                </div>
+            </div>
+            <div class="card-body p-3">
+                {% for c in categories %}
+                <div class="category-guide-item">
+                    <span class="cg-icon"><i class="fas {{ c.icon }}"></i></span>
+                    <div>
+                        <div class="fw-semibold small">{{ c.name }}</div>
+                        <div class="text-muted" style="font-size:0.75rem;">{{ c.description[:50] if c.description else '' }}...</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Priority Guide -->
+        <div class="card content-card">
+            <div class="card-header-custom">
+                <div>
+                    <h6 class="card-title-custom">Priority Guide</h6>
+                </div>
+            </div>
+            <div class="card-body p-3">
+                <div class="priority-guide-item">
+                    <span class="priority-badge priority-critical">Critical</span>
+                    <small class="text-muted ms-2">System down, complete work stoppage</small>
+                </div>
+                <div class="priority-guide-item mt-2">
+                    <span class="priority-badge priority-high">High</span>
+                    <small class="text-muted ms-2">Major impact, significant work disruption</small>
+                </div>
+                <div class="priority-guide-item mt-2">
+                    <span class="priority-badge priority-medium">Medium</span>
+                    <small class="text-muted ms-2">Moderate impact, some workaround available</small>
+                </div>
+                <div class="priority-guide-item mt-2">
+                    <span class="priority-badge priority-low">Low</span>
+                    <small class="text-muted ms-2">Minor issue, minimal impact on work</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

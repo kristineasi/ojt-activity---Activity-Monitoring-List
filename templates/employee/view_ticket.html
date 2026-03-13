@@ -1,0 +1,331 @@
+{% extends 'base.html' %}
+{% block title %}{{ ticket.ticket_no }} &mdash; IT Support AMS{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('my_tickets') }}">My Tickets</a></li>
+<li class="breadcrumb-item active">{{ ticket.ticket_no }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <h1 class="page-title mb-0">{{ ticket.ticket_no }}</h1>
+            <span class="status-badge status-{{ ticket.status }} fs-6">
+                {{ ticket.status|replace('_',' ')|capitalize }}
+            </span>
+            <span class="priority-badge priority-{{ ticket.priority }}">
+                {{ ticket.priority|capitalize }}
+            </span>
+        </div>
+        <p class="page-sub mt-1">{{ ticket.title }}</p>
+    </div>
+    <a href="{{ url_for('my_tickets') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back to My Tickets
+    </a>
+</div>
+
+<div class="row g-3">
+    <!-- Left Column -->
+    <div class="col-lg-8">
+
+        <!-- Ticket Details -->
+        <div class="card content-card mb-3">
+            <div class="card-header-custom">
+                <div>
+                    <h6 class="card-title-custom">Request Details</h6>
+                    <p class="card-sub-custom">Your submitted information</p>
+                </div>
+                <span class="cat-badge">
+                    <i class="fas {{ ticket.category_icon or 'fa-tools' }} me-1"></i>
+                    {{ ticket.category_name or 'Uncategorized' }}
+                </span>
+            </div>
+            <div class="card-body p-4">
+                <h5 class="fw-bold mb-3">{{ ticket.title }}</h5>
+                {% if ticket.description %}
+                <div class="mb-4">
+                    <div class="detail-label">Description</div>
+                    <div class="detail-content">{{ ticket.description }}</div>
+                </div>
+                {% endif %}
+
+                <div class="row g-3 mt-1">
+                    <div class="col-sm-6">
+                        <div class="detail-field">
+                            <i class="fas fa-hourglass-start text-muted me-2"></i>
+                            <span class="text-muted">Filed on:</span>
+                            <strong class="ms-1">{{ ticket.created_at.strftime('%b %d, %Y %I:%M %p') if ticket.created_at else '—' }}</strong>
+                        </div>
+                    </div>
+                    {% if ticket.started_at %}
+                    <div class="col-sm-6">
+                        <div class="detail-field">
+                            <i class="fas fa-play text-info me-2"></i>
+                            <span class="text-muted">Work started:</span>
+                            <strong class="ms-1">{{ ticket.started_at.strftime('%b %d, %Y %I:%M %p') }}</strong>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if ticket.resolved_at %}
+                    <div class="col-sm-6">
+                        <div class="detail-field">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            <span class="text-muted">Resolved:</span>
+                            <strong class="ms-1 text-success">{{ ticket.resolved_at.strftime('%b %d, %Y %I:%M %p') }}</strong>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Resolution Notes (visible to employee after resolved) -->
+        {% if ticket.resolution %}
+        <div class="card content-card mb-3" style="border-left: 4px solid var(--success);">
+            <div class="card-header-custom">
+                <div>
+                    <h6 class="card-title-custom text-success"><i class="fas fa-check-double me-2"></i>How It Was Fixed</h6>
+                    <p class="card-sub-custom">Solution provided by the IT team</p>
+                </div>
+            </div>
+            <div class="card-body p-3">
+                <div class="resolution-box">
+                    <div class="resolution-body">{{ ticket.resolution }}</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Comments / Messages -->
+        <div class="card content-card mb-3">
+            <div class="card-header-custom">
+                <div>
+                    <h6 class="card-title-custom">Messages</h6>
+                    <p class="card-sub-custom">Communication with IT support</p>
+                </div>
+                <span class="badge bg-light text-dark border">{{ comments|length }}</span>
+            </div>
+            <div class="card-body p-3">
+                {% if comments %}
+                <div class="comments-list mb-3">
+                    {% for c in comments %}
+                    <div class="comment-item {% if c.commenter_role in ('it_staff','admin') %}comment-staff{% else %}comment-emp{% endif %}">
+                        <div class="comment-avatar">{{ c.commenter_name[0].upper() if c.commenter_name else '?' }}</div>
+                        <div class="comment-body">
+                            <div class="comment-header">
+                                <span class="comment-author">{{ c.commenter_name or 'Unknown' }}</span>
+                                {% if c.commenter_role in ('it_staff', 'admin') %}
+                                <span class="badge bg-info-subtle text-info ms-1"><i class="fas fa-user-shield me-1"></i>IT Support</span>
+                                {% else %}
+                                <span class="badge bg-success-subtle text-success ms-1">You</span>
+                                {% endif %}
+                                <span class="comment-time ms-auto">{{ c.created_at.strftime('%b %d, %Y %I:%M %p') if c.created_at else '' }}</span>
+                            </div>
+                            <div class="comment-text">{{ c.message }}</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state-sm mb-3">
+                    <i class="fas fa-comment-slash"></i>
+                    <p>No messages yet. If IT staff ask you questions, they will appear here.</p>
+                </div>
+                {% endif %}
+                {% if ticket.status not in ['closed', 'cancelled'] %}
+                <form method="POST" action="{{ url_for('add_comment', activity_id=ticket.id) }}">
+                    <textarea name="message" class="form-control mb-2" rows="2"
+                              placeholder="Add additional details or reply to IT staff…"></textarea>
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="fas fa-paper-plane me-1"></i> Send Message
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Activity Timeline -->
+        <div class="card content-card">
+            <div class="card-header-custom">
+                <div>
+                    <h6 class="card-title-custom">Ticket History</h6>
+                    <p class="card-sub-custom">History of changes on your ticket</p>
+                </div>
+                <span class="badge bg-light text-dark border">{{ logs|length }} entries</span>
+            </div>
+            <div class="card-body p-3">
+                {% if logs %}
+                <div class="timeline">
+                    {% for log in logs %}
+                    <div class="timeline-item">
+                        <div class="timeline-dot tl-{{ log.action }}"></div>
+                        <div class="timeline-content">
+                            <div class="tl-header">
+                                <span class="tl-action">
+                                    {% if log.action == 'created' %}
+                                        <i class="fas fa-plus-circle text-success me-1"></i>Request Submitted
+                                    {% elif log.action == 'status_changed' %}
+                                        <i class="fas fa-exchange-alt text-info me-1"></i>Status Updated
+                                    {% elif log.action == 'commented' %}
+                                        <i class="fas fa-comment text-primary me-1"></i>Message Added
+                                    {% elif log.action == 'resolution_added' %}
+                                        <i class="fas fa-check-double text-success me-1"></i>Solution Provided
+                                    {% elif log.action == 'rated' %}
+                                        <i class="fas fa-star text-warning me-1"></i>You Rated this Ticket
+                                    {% else %}
+                                        <i class="fas fa-edit text-warning me-1"></i>Updated
+                                    {% endif %}
+                                </span>
+                                <span class="tl-time">{{ log.created_at.strftime('%b %d, %Y %I:%M %p') if log.created_at else '' }}</span>
+                            </div>
+                            <div class="tl-details">{{ log.details or '' }}</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state-sm">
+                    <i class="fas fa-history"></i>
+                    <p>No history yet.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Right Column -->
+    <div class="col-lg-4">
+
+        <!-- Ticket Info -->
+        <div class="card content-card mb-3">
+            <div class="card-header-custom">
+                <div><h6 class="card-title-custom">Ticket Info</h6></div>
+            </div>
+            <div class="card-body p-3">
+                <div class="info-row">
+                    <span class="info-label">Ticket No.</span>
+                    <span class="ticket-no">{{ ticket.ticket_no }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Priority</span>
+                    <span class="priority-badge priority-{{ ticket.priority }}">{{ ticket.priority|capitalize }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Status</span>
+                    <span class="status-badge status-{{ ticket.status }}">{{ ticket.status|replace('_',' ')|capitalize }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Category</span>
+                    <span>{{ ticket.category_name or '—' }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Filed On</span>
+                    <span class="small">{{ ticket.created_at.strftime('%b %d, %Y') if ticket.created_at else '—' }}</span>
+                </div>
+                {% if ticket.resolved_at %}
+                <div class="info-row">
+                    <span class="info-label">Resolved</span>
+                    <span class="small text-success">{{ ticket.resolved_at.strftime('%b %d, %Y') }}</span>
+                </div>
+                {% endif %}
+                {% if ticket.rating %}
+                <div class="info-row">
+                    <span class="info-label">Your Rating</span>
+                    <span class="small">
+                        {% for i in range(1,6) %}{% if i <= ticket.rating %}<i class="fas fa-star text-warning"></i>{% else %}<i class="far fa-star text-muted"></i>{% endif %}{% endfor %}
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Handling IT Staff -->
+        <div class="card content-card mb-3">
+            <div class="card-header-custom">
+                <div><h6 class="card-title-custom">Handling IT Staff</h6></div>
+                <i class="fas fa-user-shield text-info"></i>
+            </div>
+            <div class="card-body p-3">
+                {% if ticket.staff_name %}
+                <div class="person-card">
+                    <div class="person-avatar person-staff">{{ ticket.staff_name[0].upper() }}</div>
+                    <div class="person-details">
+                        <div class="person-name">{{ ticket.staff_name }}</div>
+                        <div class="person-role text-info">IT Support</div>
+                    </div>
+                </div>
+                {% if ticket.staff_email %}
+                <div class="contact-row mt-2">
+                    <i class="fas fa-envelope text-muted"></i>
+                    <a href="mailto:{{ ticket.staff_email }}">{{ ticket.staff_email }}</a>
+                </div>
+                {% endif %}
+                {% if ticket.staff_phone %}
+                <div class="contact-row">
+                    <i class="fas fa-phone text-muted"></i>
+                    <span>{{ ticket.staff_phone }}</span>
+                </div>
+                {% endif %}
+                {% else %}
+                <div class="empty-state-sm">
+                    <i class="fas fa-user-clock"></i>
+                    <p>Waiting for IT staff acceptance</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Rating Card (show only when resolved/closed and not yet rated) -->
+        {% if ticket.status in ['resolved', 'closed'] and not ticket.rating %}
+        <div class="card content-card" style="border-left:4px solid var(--warning);">
+            <div class="card-header-custom">
+                <div>
+                    <h6 class="card-title-custom">Rate Your Experience</h6>
+                    <p class="card-sub-custom">How satisfied are you with the support?</p>
+                </div>
+                <i class="fas fa-star text-warning"></i>
+            </div>
+            <div class="card-body p-3">
+                <form method="POST" action="{{ url_for('rate_ticket', ticket_id=ticket.id) }}" id="ratingForm">
+                    <div class="star-rating-row mb-3">
+                        {% for val in [5,4,3,2,1] %}
+                        <input type="radio" name="rating" id="star{{ val }}" value="{{ val }}" class="star-input" required>
+                        <label for="star{{ val }}" class="star-label" title="{{ val }} star{{ 's' if val > 1 }}">
+                            <i class="fas fa-star"></i>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    <textarea name="feedback" class="form-control mb-3" rows="2"
+                              placeholder="Optional: share your feedback…"></textarea>
+                    <button type="submit" class="btn btn-warning text-dark w-100">
+                        <i class="fas fa-paper-plane me-2"></i>Submit Rating
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% elif ticket.rating %}
+        <div class="card content-card" style="border-left:4px solid var(--success);">
+            <div class="card-header-custom">
+                <div><h6 class="card-title-custom">Your Rating</h6></div>
+                <i class="fas fa-check-circle text-success"></i>
+            </div>
+            <div class="card-body p-3 text-center">
+                <div class="mb-2 fs-4">
+                    {% for i in range(1,6) %}{% if i <= ticket.rating %}<i class="fas fa-star text-warning"></i>{% else %}<i class="far fa-star text-muted"></i>{% endif %}{% endfor %}
+                </div>
+                <div class="fw-semibold">{{ ticket.rating }}/5 Stars</div>
+                {% if ticket.feedback %}
+                <div class="text-muted small fst-italic mt-2">"{{ ticket.feedback }}"</div>
+                {% endif %}
+                <div class="text-success small mt-2"><i class="fas fa-check me-1"></i>Thank you for your feedback!</div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% endblock %}

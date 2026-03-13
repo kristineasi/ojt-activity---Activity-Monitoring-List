@@ -1,0 +1,230 @@
+{% extends 'base.html' %}
+{% block title %}Activities &mdash; IT Support AMS{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Activities</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Support Tickets</h1>
+        <p class="page-sub">Manage and track all IT support requests.</p>
+    </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="card content-card mb-3">
+    <div class="card-body p-3">
+        <form method="GET" action="{{ url_for('activities') }}" class="row g-2 align-items-end">
+            <div class="col-12 col-md-4 col-lg-3">
+                <div class="input-with-icon">
+                    <i class="fas fa-search"></i>
+                          <input type="text" name="search" class="form-control"
+                              placeholder="Search ticket, title, requester..."
+                           value="{{ search }}">
+                </div>
+            </div>
+            <div class="col-6 col-md-2">
+                <select name="status" class="form-select">
+                    <option value="">All Status</option>
+                    <option value="pending" {{ 'selected' if status_filter=='pending' }}>Pending</option>
+                    <option value="in_progress" {{ 'selected' if status_filter=='in_progress' }}>In Progress</option>
+                    <option value="resolved" {{ 'selected' if status_filter=='resolved' }}>Resolved</option>
+                    <option value="closed" {{ 'selected' if status_filter=='closed' }}>Closed</option>
+                    <option value="cancelled" {{ 'selected' if status_filter=='cancelled' }}>Cancelled</option>
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
+                <select name="priority" class="form-select">
+                    <option value="">All Priority</option>
+                    <option value="critical" {{ 'selected' if priority_filter=='critical' }}>Critical</option>
+                    <option value="high" {{ 'selected' if priority_filter=='high' }}>High</option>
+                    <option value="medium" {{ 'selected' if priority_filter=='medium' }}>Medium</option>
+                    <option value="low" {{ 'selected' if priority_filter=='low' }}>Low</option>
+                </select>
+            </div>
+            <div class="col-6 col-md-3">
+                <select name="category" class="form-select">
+                    <option value="">All Categories</option>
+                    {% for c in categories %}
+                    <option value="{{ c.id }}" {{ 'selected' if category_filter==c.id|string }}>{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-6 col-md-1 d-flex gap-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-filter"></i>
+                </button>
+                <a href="{{ url_for('activities') }}" class="btn btn-outline-secondary w-100">
+                    <i class="fas fa-times"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Quick Filter Badges -->
+<div class="d-flex flex-wrap gap-2 mb-3">
+    <a href="{{ url_for('activities') }}" class="filter-chip {{ 'active' if not status_filter }}">
+        All
+    </a>
+    <a href="{{ url_for('activities', status='pending') }}" class="filter-chip {{ 'active' if status_filter=='pending' }} fc-pending">
+        <i class="fas fa-hourglass-half me-1"></i>Pending
+    </a>
+    <a href="{{ url_for('activities', status='in_progress') }}" class="filter-chip {{ 'active' if status_filter=='in_progress' }} fc-progress">
+        <i class="fas fa-spinner me-1"></i>In Progress
+    </a>
+    <a href="{{ url_for('activities', status='resolved') }}" class="filter-chip {{ 'active' if status_filter=='resolved' }} fc-resolved">
+        <i class="fas fa-check me-1"></i>Resolved
+    </a>
+    <a href="{{ url_for('activities', status='closed') }}" class="filter-chip {{ 'active' if status_filter=='closed' }} fc-closed">
+        <i class="fas fa-archive me-1"></i>Closed
+    </a>
+</div>
+
+<!-- Results count -->
+<p class="text-muted small mb-2 ms-1">
+    Showing <strong>{{ activities|length }}</strong> ticket{{ 's' if activities|length != 1 }}
+    {% if search or status_filter or priority_filter or category_filter %} (filtered){% endif %}
+</p>
+
+<!-- Table -->
+<div class="card content-card">
+    <div class="card-body p-0">
+        {% if activities %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 custom-table">
+                <thead>
+                    <tr>
+                        <th>Ticket No.</th>
+                        <th>Title</th>
+                        <th>Category</th>
+                        <th>Requester / Dept.</th>
+                        <th>Handled By</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th>Date Filed</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in activities %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('view_activity', activity_id=a.id) }}" class="ticket-no">
+                                {{ a.ticket_no }}
+                            </a>
+                        </td>
+                        <td>
+                            <div class="fw-semibold" style="max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="{{ a.title }}">
+                                {{ a.title }}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="cat-badge">
+                                <i class="fas {{ a.category_icon or 'fa-tools' }} me-1"></i>
+                                {{ a.category_name or '—' }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="fw-500">{{ a.requester_name or '—' }}</div>
+                            {% if a.requester_department %}
+                            <small class="text-muted">{{ a.requester_department }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if a.staff_name %}
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="mini-avatar">{{ a.staff_name[0].upper() }}</div>
+                                    <span>{{ a.staff_name }}</span>
+                                </div>
+                            {% else %}
+                                <span class="text-muted">Awaiting Acceptance</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="priority-badge priority-{{ a.priority }}">
+                                {{ a.priority|capitalize }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="status-badge status-{{ a.status }}">
+                                {{ a.status|replace('_',' ')|capitalize }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="text-muted small">
+                                {{ a.created_at.strftime('%b %d, %Y') if a.created_at else '—' }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="action-btns">
+                                {% if current_user.get('role') in ['it_staff', 'admin'] and not a.assigned_to %}
+                                <form method="POST" action="{{ url_for('accept_activity', activity_id=a.id) }}" class="d-inline">
+                                    <button type="submit" class="action-btn action-edit" title="Accept Ticket">
+                                        <i class="fas fa-hand-paper"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                                <a href="{{ url_for('view_activity', activity_id=a.id) }}" class="action-btn" title="View">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{{ url_for('edit_activity', activity_id=a.id) }}" class="action-btn action-edit" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% if current_user.get('role') == 'admin' %}
+                                <button type="button" class="action-btn action-delete"
+                                        onclick="confirmDelete('{{ url_for('delete_activity', activity_id=a.id) }}', '{{ a.ticket_no }}')"
+                                        title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state py-5">
+            <i class="fas fa-ticket-alt"></i>
+            <h6>No tickets found</h6>
+            <p>Try adjusting your filters.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Delete confirm modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-body text-center p-4">
+                <div class="delete-icon-wrap mb-3">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h6 class="fw-bold mb-1">Delete Ticket?</h6>
+                <p class="text-muted small mb-3" id="deleteTicketNo"></p>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-secondary flex-fill" data-bs-dismiss="modal">Cancel</button>
+                    <form id="deleteForm" method="POST" class="flex-fill">
+                        <button type="submit" class="btn btn-danger w-100">Delete</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmDelete(url, ticketNo) {
+    document.getElementById('deleteForm').action = url;
+    document.getElementById('deleteTicketNo').textContent = 'This will permanently delete ticket ' + ticketNo + '.';
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+</script>
+{% endblock %}

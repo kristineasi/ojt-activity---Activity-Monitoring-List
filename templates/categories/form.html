@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Edit' if action=='edit' else 'Add' }} Category &mdash; IT Support AMS{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('categories') }}">Categories</a></li>
+<li class="breadcrumb-item active">{{ 'Edit' if action=='edit' else 'Add' }} Category</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">{{ 'Edit' if action=='edit' else 'Add' }} Category</h1>
+        <p class="page-sub">{{ 'Update the category details.' if action=='edit' else 'Create a new ticket category for employees to select.' }}</p>
+    </div>
+    <a href="{{ url_for('categories') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="card content-card">
+            <div class="card-header-custom">
+                <div>
+                    <h6 class="card-title-custom">Category Details</h6>
+                    <p class="card-sub-custom">Employees will see the name and icon when submitting a request.</p>
+                </div>
+                <i class="fas fa-tags text-primary"></i>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST"
+                      action="{{ url_for('edit_category', cat_id=cat.id) if action=='edit' else url_for('add_category') }}">
+
+                    <div class="mb-3">
+                        <label class="form-label required-label">Category Name</label>
+                        <input type="text" name="name" class="form-control"
+                               placeholder="e.g. Hardware Issue"
+                               value="{{ cat.name if cat else request.form.get('name','') }}"
+                               required maxlength="100">
+                        <div class="form-hint">Keep it short and clear. Employees will see this name.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea name="description" class="form-control" rows="3"
+                                  placeholder="e.g. Problems with physical devices: computers, monitors, keyboards, etc."
+                                  maxlength="255">{{ cat.description if cat else request.form.get('description','') }}</textarea>
+                        <div class="form-hint">Optional. Helps employees choose the right category.</div>
+                    </div>
+
+                    <!-- Icon picker -->
+                    <div class="mb-4">
+                        <label class="form-label">Icon</label>
+                        <div class="d-flex align-items-center gap-3 mb-2">
+                            <div class="cat-icon-preview-lg" id="iconPreview">
+                                <i class="fas {{ cat.icon if cat else 'fa-tools' }}" id="iconEl"></i>
+                            </div>
+                            <input type="text" name="icon" id="iconInput" class="form-control"
+                                   value="{{ cat.icon if cat else request.form.get('icon','fa-tools') }}"
+                                   placeholder="fa-tools" maxlength="50">
+                        </div>
+                        <div class="form-hint mb-2">Enter a <a href="https://fontawesome.com/icons" target="_blank">Font Awesome</a> icon class. Click a shortcut below:</div>
+                        <div class="icon-shortcuts">
+                            {% set icons = [
+                                ('fa-desktop','Hardware'),('fa-laptop-code','Software'),('fa-network-wired','Network'),
+                                ('fa-envelope','Email'),('fa-print','Printer'),('fa-database','Data'),
+                                ('fa-shield-alt','Security'),('fa-tools','General'),('fa-wifi','Wi-Fi'),
+                                ('fa-mobile-alt','Mobile'),('fa-keyboard','Keyboard'),('fa-server','Server')
+                            ] %}
+                            {% for icon_cls, label in icons %}
+                            <button type="button" class="icon-shortcut-btn" onclick="setIcon('{{ icon_cls }}')"
+                                    title="{{ label }}">
+                                <i class="fas {{ icon_cls }}"></i>
+                                <span>{{ label }}</span>
+                            </button>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="fas fa-save me-2"></i>{{ 'Save Changes' if action=='edit' else 'Add Category' }}
+                        </button>
+                        <a href="{{ url_for('categories') }}" class="btn btn-outline-secondary px-4">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.cat-icon-preview-lg {
+    width: 52px; height: 52px; border-radius: 12px;
+    background: var(--primary-light); color: var(--primary);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; flex-shrink: 0; transition: all 0.2s;
+}
+.icon-shortcuts { display: flex; flex-wrap: wrap; gap: 6px; }
+.icon-shortcut-btn {
+    display: flex; align-items: center; gap: 5px;
+    padding: 5px 10px; border-radius: 6px; font-size: 12px;
+    border: 1px solid #e2e8f0; background: white; cursor: pointer;
+    transition: all 0.15s; color: #374151;
+}
+.icon-shortcut-btn:hover { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
+</style>
+<script>
+function setIcon(cls) {
+    document.getElementById('iconInput').value = cls;
+    document.getElementById('iconEl').className = 'fas ' + cls;
+}
+document.getElementById('iconInput').addEventListener('input', function() {
+    document.getElementById('iconEl').className = 'fas ' + this.value.trim();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,336 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard &mdash; IT Support AMS{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Dashboard</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Dashboard</h1>
+        <p class="page-sub">Overview of IT support activities and performance.</p>
+    </div>
+</div>
+
+<!-- ===== STATS CARDS ===== -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="stat-card stat-pending">
+            <div class="stat-icon"><i class="fas fa-hourglass-half"></i></div>
+            <div class="stat-value">{{ pending }}</div>
+            <div class="stat-label">Pending</div>
+            <a href="{{ url_for('activities', status='pending') }}" class="stat-link">View <i class="fas fa-arrow-right ms-1"></i></a>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="stat-card stat-progress">
+            <div class="stat-icon"><i class="fas fa-spinner"></i></div>
+            <div class="stat-value">{{ in_progress }}</div>
+            <div class="stat-label">In Progress</div>
+            <a href="{{ url_for('activities', status='in_progress') }}" class="stat-link">View <i class="fas fa-arrow-right ms-1"></i></a>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="stat-card stat-resolved">
+            <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+            <div class="stat-value">{{ resolved }}</div>
+            <div class="stat-label">Resolved</div>
+            <a href="{{ url_for('activities', status='resolved') }}" class="stat-link">View <i class="fas fa-arrow-right ms-1"></i></a>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="stat-card stat-today">
+            <div class="stat-icon"><i class="fas fa-calendar-day"></i></div>
+            <div class="stat-value">{{ today_count }}</div>
+            <div class="stat-label">Today</div>
+            <span class="stat-link">Tickets</span>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="stat-card stat-employees">
+            <div class="stat-icon"><i class="fas fa-user-shield"></i></div>
+            <div class="stat-value">{{ staff_count }}</div>
+            <div class="stat-label">IT Staff</div>
+            <span class="stat-link">Active Users</span>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="stat-card stat-total">
+            <div class="stat-icon"><i class="fas fa-ticket-alt"></i></div>
+            <div class="stat-value">{{ total_tickets }}</div>
+            <div class="stat-label">Total Tickets</div>
+            <a href="{{ url_for('activities') }}" class="stat-link">View <i class="fas fa-arrow-right ms-1"></i></a>
+        </div>
+    </div>
+</div>
+
+<!-- ===== CHARTS ROW 1 ===== -->
+<div class="row g-3 mb-3">
+    <div class="col-lg-8">
+        <div class="card content-card h-100">
+            <div class="card-header-custom">
+                <div>
+                    <h6 class="card-title-custom">Monthly Ticket Trend</h6>
+                    <p class="card-sub-custom">Last 6 months activity</p>
+                </div>
+                <i class="fas fa-chart-line text-primary"></i>
+            </div>
+            <div class="card-body p-3">
+                <canvas id="monthlyChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card content-card h-100">
+            <div class="card-header-custom">
+                <div>
+                    <h6 class="card-title-custom">Status Distribution</h6>
+                    <p class="card-sub-custom">Current ticket status</p>
+                </div>
+                <i class="fas fa-chart-donut text-info"></i>
+            </div>
+            <div class="card-body p-3 d-flex flex-column align-items-center justify-content-center">
+                <canvas id="statusChart" height="200" style="max-width:240px;"></canvas>
+                <div class="chart-legend mt-2">
+                    {% for s in status_stats %}
+                    <div class="legend-item">
+                        <span class="legend-dot" style="background:{{ loop.index | status_color }}"></span>
+                        <span>{{ s.status|capitalize|replace('_',' ') }}</span>
+                        <strong>{{ s.count }}</strong>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-5">
+        <div class="card content-card h-100">
+            <div class="card-header-custom">
+                <div>
+                    <h6 class="card-title-custom">Tickets by Category</h6>
+                    <p class="card-sub-custom">Support type breakdown</p>
+                </div>
+                <i class="fas fa-tags text-warning"></i>
+            </div>
+            <div class="card-body p-3">
+                <canvas id="categoryChart" height="180"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card content-card h-100">
+            <div class="card-header-custom">
+                <div>
+                    <h6 class="card-title-custom">Priority Breakdown</h6>
+                    <p class="card-sub-custom">Tickets by priority level</p>
+                </div>
+                <i class="fas fa-exclamation-circle text-danger"></i>
+            </div>
+            <div class="card-body p-3">
+                <canvas id="priorityChart" height="180"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3">
+        <div class="card content-card h-100">
+            <div class="card-header-custom">
+                <div>
+                    <h6 class="card-title-custom">Top Performers</h6>
+                    <p class="card-sub-custom">IT Staff resolved tickets</p>
+                </div>
+                <i class="fas fa-trophy text-warning"></i>
+            </div>
+            <div class="card-body p-3">
+                {% if top_staff %}
+                    {% for s in top_staff %}
+                    <div class="performer-item">
+                        <div class="performer-avatar">{{ s.full_name[0].upper() }}</div>
+                        <div class="performer-info">
+                            <div class="performer-name">{{ s.full_name.split()[0] }}</div>
+                            <div class="performer-bar">
+                                <div class="performer-fill" style="width:{{ [(s.resolved / (s.total if s.total > 0 else 1)) * 100, 100]|min }}%"></div>
+                            </div>
+                        </div>
+                        <div class="performer-count">{{ s.resolved }}/{{ s.total }}</div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state-sm">
+                        <i class="fas fa-user-tie"></i>
+                        <p>No staff data yet</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== RECENT ACTIVITIES ===== -->
+<div class="card content-card">
+    <div class="card-header-custom">
+        <div>
+            <h6 class="card-title-custom">Recent Activities</h6>
+            <p class="card-sub-custom">Latest support tickets</p>
+        </div>
+        <a href="{{ url_for('activities') }}" class="btn btn-outline-primary btn-sm">View All</a>
+    </div>
+    <div class="card-body p-0">
+        {% if recent_activities %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 custom-table">
+                <thead>
+                    <tr>
+                        <th>Ticket No.</th>
+                        <th>Title</th>
+                        <th>Category</th>
+                        <th>Requester</th>
+                        <th>Handled By</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in recent_activities %}
+                    <tr class="clickable-row" data-href="{{ url_for('view_activity', activity_id=a.id) }}">
+                        <td><span class="ticket-no">{{ a.ticket_no }}</span></td>
+                        <td>
+                            <div class="fw-semibold text-truncate" style="max-width:180px;" title="{{ a.title }}">{{ a.title }}</div>
+                        </td>
+                        <td>
+                            <span class="cat-badge">
+                                <i class="fas {{ a.category_icon or 'fa-tools' }} me-1"></i>{{ a.category_name or '—' }}
+                            </span>
+                        </td>
+                        <td>{{ a.requester_name or '—' }}</td>
+                        <td>{{ a.staff_name or '<span class="text-muted">Awaiting Acceptance</span>'|safe }}</td>
+                        <td><span class="priority-badge priority-{{ a.priority }}">{{ a.priority|capitalize }}</span></td>
+                        <td><span class="status-badge status-{{ a.status }}">{{ a.status|replace('_',' ')|capitalize }}</span></td>
+                        <td><span class="text-muted small">{{ a.created_at.strftime('%b %d, %Y') if a.created_at else '—' }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state py-5">
+            <i class="fas fa-ticket-alt"></i>
+            <h6>No activities yet</h6>
+                <p>No tickets yet. Once employees submit requests, they will appear here.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+Chart.defaults.font.family = "'Inter', sans-serif";
+Chart.defaults.font.size = 12;
+
+// ===== Monthly Chart =====
+const monthlyData = {{ monthly_stats | tojson }};
+const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+new Chart(monthlyCtx, {
+    type: 'line',
+    data: {
+        labels: monthlyData.map(d => d.month),
+        datasets: [{
+            label: 'Tickets',
+            data: monthlyData.map(d => d.count),
+            borderColor: '#4361ee',
+            backgroundColor: 'rgba(67,97,238,0.08)',
+            borderWidth: 2.5,
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: '#4361ee',
+            pointRadius: 5,
+            pointHoverRadius: 7,
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+            y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { stepSize: 1 } },
+            x: { grid: { display: false } }
+        }
+    }
+});
+
+// ===== Status Chart =====
+const statusData = {{ status_stats | tojson }};
+const statusColors = { pending: '#f59e0b', in_progress: '#4cc9f0', resolved: '#10b981', closed: '#6b7280', cancelled: '#ef4444' };
+const statusCtx = document.getElementById('statusChart').getContext('2d');
+new Chart(statusCtx, {
+    type: 'doughnut',
+    data: {
+        labels: statusData.map(d => d.status.replace('_',' ').replace(/\b\w/g, l => l.toUpperCase())),
+        datasets: [{
+            data: statusData.map(d => d.count),
+            backgroundColor: statusData.map(d => statusColors[d.status] || '#9ca3af'),
+            borderWidth: 2,
+            borderColor: '#fff',
+            hoverOffset: 6
+        }]
+    },
+    options: {
+        responsive: true,
+        cutout: '65%',
+        plugins: { legend: { display: false } }
+    }
+});
+
+// ===== Category Chart =====
+const catData = {{ category_stats | tojson }};
+const catCtx = document.getElementById('categoryChart').getContext('2d');
+new Chart(catCtx, {
+    type: 'bar',
+    data: {
+        labels: catData.map(d => d.name.length > 15 ? d.name.substring(0,15)+'...' : d.name),
+        datasets: [{
+            label: 'Tickets',
+            data: catData.map(d => d.count),
+            backgroundColor: ['#4361ee','#4cc9f0','#f72585','#10b981','#f59e0b','#7209b7','#3a86ff','#ef4444','#06d6a0','#fb577a'],
+            borderRadius: 6,
+            borderSkipped: false,
+        }]
+    },
+    options: {
+        indexAxis: 'y',
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+            x: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { stepSize: 1 } },
+            y: { grid: { display: false } }
+        }
+    }
+});
+
+// ===== Priority Chart =====
+const priData = {{ priority_stats | tojson }};
+const priColors = { low: '#10b981', medium: '#f59e0b', high: '#f97316', critical: '#ef4444' };
+const priCtx = document.getElementById('priorityChart').getContext('2d');
+new Chart(priCtx, {
+    type: 'doughnut',
+    data: {
+        labels: priData.map(d => d.priority.charAt(0).toUpperCase() + d.priority.slice(1)),
+        datasets: [{
+            data: priData.map(d => d.count),
+            backgroundColor: priData.map(d => priColors[d.priority] || '#9ca3af'),
+            borderWidth: 2, borderColor: '#fff', hoverOffset: 6
+        }]
+    },
+    options: {
+        responsive: true,
+        cutout: '60%',
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 10 } } }
+    }
+});
+</script>
+{% endblock %}
